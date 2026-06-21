@@ -1,0 +1,141 @@
+I ran ./build.sh and this is the output:
+
+
+sullydux@Mac System Telemetry Monitor % chmod +x build.sh
+sullydux@Mac System Telemetry Monitor % ./build.sh
+==> Building (release) with /usr/bin/swift
+Building for production...
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:119:26: warning: no calls to throwing functions occur within 'try' expression
+117 |             case .gpu:   try await runGpu(duration: duration, params: params)
+118 |             case .llm:   try await runLLM(duration: duration, params: params)
+119 |             case .suite: try await runSuite(duration: duration, params: params)
+    |                          `- warning: no calls to throwing functions occur within 'try' expression
+120 |             }
+121 |         } catch is CancellationError {
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:145:18: error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+143 |             let m = counter.value
+144 |             let throughput = m == 0 ? 0 : Double(m) / max(0.001, elapsed)
+145 |             self.publishLive("""
+    |                  `- error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+146 |             CPU BENCHMARK
+147 |             workers        : \(workers)
+    :
+555 | 
+556 |     @MainActor
+557 |     private func publishLive(_ text: String, progress: Double) {
+    |                  `- note: calls to instance method 'publishLive(_:progress:)' from outside of its actor context are implicitly asynchronous
+558 |         appState?.updateBenchmark {
+559 |             $0.liveMetricsText = text
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:159:84: warning: capture of 'counter' with non-Sendable type 'ThreadSafeCounter' in a '@Sendable' closure [#SendableClosureCaptures]
+157 |         for _ in 0..<workers {
+158 |             DispatchQueue.global(qos: .userInitiated).async(group: group) {
+159 |                 BenchmarkEngine.cpuWorkerStatic(n: n, deadline: deadline, counter: counter)
+    |                                                                                    `- warning: capture of 'counter' with non-Sendable type 'ThreadSafeCounter' in a '@Sendable' closure [#SendableClosureCaptures]
+160 |             }
+161 |         }
+    :
+673 | }
+674 | 
+675 | private final class ThreadSafeCounter {
+    |                     `- note: class 'ThreadSafeCounter' does not conform to the 'Sendable' protocol
+676 |     private let lock = NSLock()
+677 |     private var raw = 0
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:236:18: error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+234 |             let moved = Double(passes) * Double(elements) * 8.0
+235 |             let bw = elapsed > 0 ? moved / elapsed : 0
+236 |             self.publishLive("""
+    |                  `- error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+237 |             RAM BENCHMARK
+238 |             target          : \(String(format: "%.2f", targetGB)) GB (\(params.ramPercent)% of \(String(format: "%.0f", totalRAM/1_073_741_824.0)) GB)
+    :
+555 | 
+556 |     @MainActor
+557 |     private func publishLive(_ text: String, progress: Double) {
+    |                  `- note: calls to instance method 'publishLive(_:progress:)' from outside of its actor context are implicitly asynchronous
+558 |         appState?.updateBenchmark {
+559 |             $0.liveMetricsText = text
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:348:17: warning: instance method 'waitUntilCompleted' is unavailable from asynchronous contexts; Use 'await completed()' instead.; this is an error in the Swift 6 language mode
+346 |             enc.endEncoding()
+347 |             cmd.commit()
+348 |             cmd.waitUntilCompleted()
+    |                 `- warning: instance method 'waitUntilCompleted' is unavailable from asynchronous contexts; Use 'await completed()' instead.; this is an error in the Swift 6 language mode
+349 |             counter.increment()
+350 |             matmuls &+= 1
+
+Metal.MTLCommandBuffer.waitUntilCompleted:2:6: note: 'waitUntilCompleted()' declared here
+1 | protocol MTLCommandBuffer {
+2 | func waitUntilCompleted()}
+  |      `- note: 'waitUntilCompleted()' declared here
+3 | 
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:323:18: error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+321 |             let m = counter.value
+322 |             let throughput = elapsed > 0 ? Double(m) / elapsed : 0
+323 |             self.publishLive("""
+    |                  `- error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+324 |             GPU BENCHMARK
+325 |             backend         : \(backend.label)
+    :
+555 | 
+556 |     @MainActor
+557 |     private func publishLive(_ text: String, progress: Double) {
+    |                  `- note: calls to instance method 'publishLive(_:progress:)' from outside of its actor context are implicitly asynchronous
+558 |         appState?.updateBenchmark {
+559 |             $0.liveMetricsText = text
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:305:24: error: expression is 'async' but is not marked with 'await'
+303 |         let n = nextPow2(max(128, params.gpuMatrixSize))
+304 |         let library = try makeMatmulLibrary(device: device)
+305 |         let pipeline = try device.makeComputePipelineState(function: library)
+    |                        |   `- note: call is 'async'
+    |                        `- error: expression is 'async' but is not marked with 'await'
+306 |         let count = n * n
+307 |         let sharedOptions = MTLResourceOptions.storageModeShared
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:402:18: error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+400 |         let deadline = start.addingTimeInterval(duration)
+401 |         let pollTask = launchPoller(start: start, deadline: deadline, label: "LLM") { elapsed, progress in
+402 |             self.publishLive("""
+    |                  `- error: call to main actor-isolated instance method 'publishLive(_:progress:)' in a synchronous nonisolated context [#ActorIsolatedCall]
+403 |             LLM STATS — SYNTHETIC
+404 |             model size      : \(paramsB)B  (preset \(params.llmPreset))
+    :
+555 | 
+556 |     @MainActor
+557 |     private func publishLive(_ text: String, progress: Double) {
+    |                  `- note: calls to instance method 'publishLive(_:progress:)' from outside of its actor context are implicitly asynchronous
+558 |         appState?.updateBenchmark {
+559 |             $0.liveMetricsText = text
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:495:27: warning: no 'async' operations occur within 'await' expression
+493 |             }
+494 |             // Pull last result for scoring.
+495 |             if let last = await ResultsStore.shared.history.first {
+    |                           `- warning: no 'async' operations occur within 'await' expression
+496 |                 scores.append(score(for: test, result: last))
+497 |                 return "\(test.displayName.uppercased()): OK"
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift:648:13: warning: initialization of immutable value 'layers' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+646 |         // Heuristic: 2 (K+V) × layers × hidden × ctx × 2 bytes.
+647 |         // layers ≈ paramsB / 0.4e9 hidden-aligned, simplified.
+648 |         let layers = max(8, Int(Double(paramsB) / 0.10) / 1_000_000_000 == 0 ? 32 : Double(paramsB) * 0.00000006)
+    |             `- warning: initialization of immutable value 'layers' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+649 |         let layersInt = max(6, Int(Double(paramsB) * 0.0000001 * 1_000_000_000 / 6))
+650 |         let hidden = max(1024, Int(sqrt(Double(paramsB) * 100)))
+
+/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift:228:17: warning: variable 'size' was never mutated; consider changing to 'let' constant
+226 |         defer {
+227 |             // vm_deallocate the buffer host_processor_info allocated.
+228 |             var size = vm_size_t(numCPUInfo * UInt32(MemoryLayout<integer_t>.size))
+    |                 `- warning: variable 'size' was never mutated; consider changing to 'let' constant
+229 |             vm_deallocate(mach_task_self_,
+230 |                           vm_address_t(bitPattern: info),
+
+[#ActorIsolatedCall]: <https://docs.swift.org/compiler/documentation/diagnostics/actor-isolated-call>
+[#SendableClosureCaptures]: <https://docs.swift.org/compiler/documentation/diagnostics/sendable-closure-captures>
+
+sullydux@Mac System Telemetry Monitor % 

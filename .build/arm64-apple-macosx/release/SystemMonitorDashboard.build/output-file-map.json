@@ -1,0 +1,61 @@
+{
+  "": {
+    "dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboard.d",
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboard.o",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/primary.swiftdeps"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/AppState.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/AppState.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/AppState~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/AppState.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/AppState.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkEngine.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkEngine~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkEngine.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkEngine.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkWindow.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkWindow.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkWindow~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkWindow.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkWindow.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Format.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboardApp.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboardApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboardApp.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboardApp.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Telemetry.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Telemetry~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Telemetry.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Telemetry.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.dia"
+  }
+}

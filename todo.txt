@@ -1,0 +1,275 @@
+SYSTEM MONITOR DASHBOARD — SWIFT-ONLY BUILD SPEC
+===============================================
+
+This document is a self-contained specification for rebuilding the app from
+nothing. Anyone following it end-to-end, with no other files, should be able
+to reproduce a native Swift macOS app that monitors a Mac's vitals and keeps
+everything on the host machine.
+
+KEEP THESE THREE THINGS INTACT WHILE BUILDING:
+  1. The visual style: dark "terminal telemetry" aesthetic, teal accent,
+     monospace key/numbers, panel cards with thin borders.
+  2. The full feature set described in Part 0 below.
+  3. The security model in Part 1 — it is the whole reason this is safe to
+     run locally. Do not weaken it "to make things easier."
+
+--------------------------------------------------------------------------------
+PART 0 — WHAT THIS APP DOES (PRODUCT OVERVIEW)
+--------------------------------------------------------------------------------
+There is one piece:
+
+  A. A native macOS app ("the app") — built in Swift/SwiftUI. It runs on the
+     Mac you want to monitor. It shows live previews for CPU, RAM, GPU,
+     cores, system info, and other machine vitals. It uses a stylized display,
+     not a plain utilitarian one.
+
+The app also includes built-in stress tests for CPU and RAM, and a synthetic
+local-LLM test mode where you can set a fake model size and quantization to
+estimate whether a local LLM would run on the machine.
+
+--------------------------------------------------------------------------------
+PART 1 — SECURITY MODEL (must be preserved exactly)
+--------------------------------------------------------------------------------
+- The app is local-only on the host Mac.
+- No LAN server.
+- No webpage.
+- No browser dashboard.
+- No remote API.
+- Any key or internal state stays in memory only unless explicitly saved as a
+  local app preference.
+- The app should never expose a control surface that can be reached from
+  outside the Mac.
+- The app should not depend on the internet to function.
+- The display and controls must remain entirely inside the Swift macOS app.
+
+--------------------------------------------------------------------------------
+PART 2 — ARCHITECTURE & DATA FLOW
+--------------------------------------------------------------------------------
+   ┌───────────────────────────┐
+   │  Swift / SwiftUI macOS    │
+   │  app ("control panel")    │
+   │                           │
+   │  - shows vitals          │
+   │  - local benchmark UI    │
+   │  - device name field     │
+   │  - live preview bars     │
+   │  - connection log        │
+   └───────────────────────────┘
+
+Key design decision: the Swift app owns everything. There is no separate
+Python helper process, no LAN-reachable API, and no webpage. Live stats,
+benchmark state, and logs are all held and polled inside the app itself.
+
+--------------------------------------------------------------------------------
+PART 3 — SWIFT APP
+--------------------------------------------------------------------------------
+3.1 Project setup
+-----------------
+- Xcode, macOS App target, SwiftUI lifecycle, macOS 13+ deployment target.
+- App name: "System Monitor Dashboard".
+- No bundled helper script is required.
+- No Python dependency is required.
+- No app sandbox/network server entitlements are needed for a local-only app
+  unless you explicitly add some unrelated feature later.
+
+3.2 Visual design system — match exactly
+----------------------------------------
+Background:      #0a0e14
+Panel fill:       #111722
+Panel border:     #1f2937
+Primary text:     #e6edf3
+Muted/secondary:  #7d8590
+Accent (teal):    #5eead4
+Accent, dimmed:   #1f5f59
+Warning:          #fbbf24
+Danger:           #fb7185
+Monospace stack:  "JetBrains Mono" → "SF Mono" → "Menlo"
+UI font:          system font
+Buttons:          flat, no border, 6pt padding, bold 9–10pt label
+Panels:           1pt border in panel-border color, rounded corners
+Progress bars:    thin horizontal bars, track = panel-border color,
+                  fill = accent; recolor fill to warning at 70% and danger
+                  at 90%
+
+3.3 Main window layout
+----------------------
+1. Header row: "System Monitor Dashboard" title and a right-aligned status dot
+   plus "Running"/"Stopped" label.
+2. VITALS panel:
+   - live readouts for CPU, RAM, GPU, cores, disk, network, battery, and
+     system info
+   - percent bars and compact numeric summaries
+3. DEVICE NAME panel:
+   - label "DEVICE NAME"
+   - a text field pre-filled with the detected device model
+   - Save button
+   - saving updates the local device name only
+4. LIVE LOCAL PREVIEW panel:
+   - three labeled horizontal bars: CPU, RAM, GPU
+   - refreshed every second from local app state
+   - GPU shows N/A with an empty bar if no GPU load is available
+5. AI STRESS BENCHMARK panel:
+   - label "AI STRESS BENCHMARK"
+   - descriptive text explaining CPU, RAM, GPU, and synthetic local-LLM tests
+   - Open Benchmark Suite button opens the benchmark window
+6. CONNECTION LOG panel:
+   - scrolling, read-only monospace text view
+   - appends local log events with timestamps
+7. Footer:
+   - left: muted small text "Read-only • Local only"
+   - right: Stop Server button if any background local service is running
+   - on close: stop any background tasks cleanly and exit
+
+3.4 Benchmark window
+--------------------
+Title: "AI / Stress Benchmark".
+
+Top:
+- a line showing the detected compute backend in plain language:
+  - MLX Apple Metal GPU
+  - PyTorch MPS Apple Metal GPU
+  - PyTorch CUDA GPU
+  - None found — GPU tests disabled
+
+TEST TYPE panel:
+- radio buttons: CPU, RAM, GPU, LLM Stats, Full Suite
+- default: CPU
+- changing selection swaps which parameter panel is shown
+
+DURATION panel:
+- dropdown with 10 sec, 30 sec, 1 min, 2 min, 5 min, 10 min, Custom
+- default: 30 sec
+- selecting Custom enables an adjacent numeric field
+
+Per-test parameter panels:
+- CPU: worker thread count, matrix size
+- RAM: % of total RAM to allocate
+- GPU: matrix size
+- LLM Stats: fake model size, quantization, batch size, context length,
+  device, and custom model fields when applicable
+
+Controls row:
+- Start Test
+- Cancel
+- Open Results Folder
+
+Progress panel:
+- status label: Idle, Running, or Error
+- progress bar 0–100
+- monospace block for current live metrics
+
+Last Result panel:
+- scrollable read-only monospace text view showing the most recently completed
+  run
+- refresh only when the result changes so it does not flicker
+
+3.5 Local state model
+---------------------
+The app should store:
+- current device name
+- local benchmark status
+- live CPU/RAM/GPU preview values
+- benchmark history
+- connection log entries
+- current running state
+- fake LLM model size settings
+- fake quantization settings
+
+All of that should remain inside Swift/SwiftUI state and local persistence
+only. There is no remote state and no network service.
+
+3.6 Benchmark engine
+--------------------
+The app includes an internal benchmark engine running on background threads.
+It supports:
+- CPU test
+- RAM test
+- GPU test
+- synthetic LLM Stats test
+- Full Suite running the above back to back
+
+CPU TEST:
+- each worker repeatedly multiplies matrices until the deadline
+- result summary includes total matmuls, synthetic throughput, and average CPU
+
+RAM TEST:
+- allocates a large array sized to a target percent of total RAM
+- repeatedly reads and writes the array until the deadline
+- result summary includes bytes moved, bandwidth, and array size
+
+GPU TEST:
+- uses the best local compute backend available
+- if no backend is available, report unavailable instead of faking a result
+- result summary includes synthetic throughput and backend name
+
+LLM STATS TEST:
+- synthetic only, no real model ever downloaded
+- simulates the matrix-multiply load a real local LLM of a given size would
+  generate
+- supports fake model size presets and custom sizes
+- supports quantization modes
+- reports estimated tokens/sec, bandwidth bottleneck, model weights size,
+  and KV-cache estimate
+
+FULL SUITE:
+- runs CPU, RAM, GPU, and LLM Stats back to back
+- computes a combined AI capability score from the sub-tests
+- each sub-test error is captured rather than aborting the whole suite
+
+Persistence:
+- every completed run is written to a local JSON file under a stress-results
+  folder next to the app resources or in Application Support
+- recent runs are kept in memory for the UI
+
+3.7 Logging and control flow
+----------------------------
+- The app logs key changes, device name changes, benchmark start/finish,
+  errors, and stop events.
+- There is no network logging because there is no network service.
+- The main window and benchmark window should both read from the same local
+  state model so they always stay in sync.
+- The app should not depend on any browser, webpage, or LAN connectivity.
+
+--------------------------------------------------------------------------------
+PART 4 — STEP-BY-STEP BUILD CHECKLIST
+--------------------------------------------------------------------------------
+[ ] 1. Create the Xcode project for a macOS SwiftUI app.
+[ ] 2. Implement the local state model for device name, logs, stats, and
+    benchmark history.
+[ ] 3. Build the main window layout per Part 3.3.
+[ ] 4. Build the benchmark window per Part 3.4.
+[ ] 5. Implement the internal benchmark engine per Part 3.6.
+[ ] 6. Add local persistence for benchmark results and preferences.
+[ ] 7. Verify the app runs fully offline with no LAN listeners and no webpage.
+[ ] 8. Confirm the UI shows live preview bars and local benchmark progress.
+[ ] 9. Confirm device renaming works entirely inside the app.
+[ ] 10. Confirm the app closes cleanly and stops any running local tasks.
+
+--------------------------------------------------------------------------------
+PART 5 — APPENDIX: LOCAL STATE SCHEMA
+--------------------------------------------------------------------------------
+Suggested local app state:
+{
+  "timestamp": "<ISO 8601 local time>",
+  "device_name": "<friendly name>",
+  "uptime_seconds": <int>,
+  "cpu": { "percent": <float>, "per_core": [<float>, ...] },
+  "ram": { "percent": <float>, "used_gb": <float>, "total_gb": <float> },
+  "gpu": [ { "name": "...", "load_percent": <float|null> } ],
+  "stress_test": {
+    "running": <bool>,
+    "test_type": "cpu|ram|gpu|llm|suite",
+    "phase": "...",
+    "elapsed_seconds": <float>,
+    "duration_seconds": <float>,
+    "progress_percent": <float>,
+    "live_metrics": { ... },
+    "error": "<string>|null",
+    "last_result": { ... },
+    "history": [ ... ]
+  }
+}
+
+--------------------------------------------------------------------------------
+END OF INSTRUCTIONS
+--------------------------------------------------------------------------------
