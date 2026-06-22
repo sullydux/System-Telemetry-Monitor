@@ -1,6 +1,8 @@
 SYSTEM MONITOR DASHBOARD — SWIFT-ONLY BUILD SPEC
 ===============================================
 
+MacOS Tahoe and up
+
 This document is a self-contained specification for rebuilding the app from
 nothing. Anyone following it end-to-end, with no other files, should be able
 to reproduce a native Swift macOS app that monitors a Mac's vitals and keeps
