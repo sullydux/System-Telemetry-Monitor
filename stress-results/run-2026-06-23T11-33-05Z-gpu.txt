@@ -1,0 +1,10 @@
+System Monitor Dashboard — benchmark report
+Test:       GPU
+Started:    2026-06-23 11:33:05 +0000
+Finished:   2026-06-23 11:33:36 +0000
+Duration:   30.58 s
+
+GPU BENCHMARK — COMPLETE
+combined matmuls: 2292
+duration: 30.58 s
+throughput: 75 matmuls/s

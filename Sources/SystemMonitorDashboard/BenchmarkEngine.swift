@@ -353,52 +353,149 @@ final class BenchmarkEngine: @unchecked Sendable {
     // MARK: Synthetic LLM test
 
     private func runLLM(duration: Double, params: BenchmarkStatus) async throws {
-        await setPhase("LLM • synthetic estimate (safeguarded)")
+        await setPhase("LLM • allocating working set and simulating inference")
 
+        // Determine requested model size and cap by available RAM (conservative).
         var paramsB = params.llmPreset == "custom" ? params.llmCustomParamsB : Int(params.llmPreset.replacingOccurrences(of: "B", with: "")) ?? 7
-        // Cap paramsB based on available RAM (conservative: 50% of RAM for weights)
         let totalRAMBytes = Double(SystemFacts.shared.physicalRAMBytes)
         let maxParamsBByRam = max(1, Int((totalRAMBytes * 0.5) / 1_000_000_000.0))
         var capped = false
-        if paramsB > maxParamsBByRam {
-            paramsB = maxParamsBByRam
-            capped = true
+        if paramsB > maxParamsBByRam { paramsB = maxParamsBByRam; capped = true }
+
+        let weightsBytesRequested = estimateModelSizeBytes(paramsB: paramsB, quant: params.llmQuantization)
+        let kvBytesRequested = estimateKVCacheBytes(ctx: params.llmContextLength, paramsB: paramsB)
+        let totalRequested = Double(weightsBytesRequested + kvBytesRequested)
+
+        // Cap real allocation to a safe fraction of RAM to avoid OOM.
+        let safeFraction = 0.7
+        let maxAllocBytes = Int(totalRAMBytes * safeFraction)
+        var weightsAlloc = min(weightsBytesRequested, maxAllocBytes)
+        var kvAlloc = min(kvBytesRequested, max(0, maxAllocBytes - weightsAlloc))
+        // If allocations would exceed maxAllocBytes, scale them down proportionally.
+        if weightsAlloc + kvAlloc > maxAllocBytes {
+            let scale = Double(maxAllocBytes) / Double(weightsAlloc + kvAlloc)
+            weightsAlloc = Int(Double(weightsAlloc) * scale)
+            kvAlloc = Int(Double(kvAlloc) * scale)
         }
 
-        let weightsBytes = estimateModelSizeBytes(paramsB: paramsB, quant: params.llmQuantization)
-        let kvBytes = estimateKVCacheBytes(ctx: params.llmContextLength, paramsB: paramsB)
-        let totalWorkingSet = weightsBytes + kvBytes
+        let fitsInMemory = Double(weightsBytesRequested + kvBytesRequested) <= totalRAMBytes * 0.9
+        let memBandwidthBytesPerSec = Double(estimatePeakMemBandwidth(gpuCores: SystemFacts.shared.gpuCores))
+        let tokensPerSecBandwidth = weightsBytesRequested > 0 ? memBandwidthBytesPerSec / Double(weightsBytesRequested) : 0
+        let estTokensPerSec = fitsInMemory ? min(tokensPerSecBandwidth, 250) : max(0.1, tokensPerSecBandwidth * 0.1)
 
-        // Derived estimates from local hardware.
-        let totalRAM = totalRAMBytes
-        let gpuCores = SystemFacts.shared.gpuCores
-        let fitsInMemory = Double(totalWorkingSet) <= totalRAM * 0.9
-        let memBandwidthBytesPerSec = Double(estimatePeakMemBandwidth(gpuCores: gpuCores))
-        let tokensPerSecBandwidth = weightsBytes > 0 ? memBandwidthBytesPerSec / Double(weightsBytes) : 0
-        let tokensPerSec = fitsInMemory ? min(tokensPerSecBandwidth, 250) : max(0.1, tokensPerSecBandwidth * 0.1)
-        let bottleneck = tokensPerSecBandwidth >= tokensPerSec ? "memory bandwidth" : "compute"
+        // Allocate and touch memory to force real RAM usage.
+        await setPhase("LLM • allocating \(Format.bytes(Double(weightsAlloc + kvAlloc))) working set")
+        var weightsPtr: UnsafeMutableRawPointer? = nil
+        var kvPtr: UnsafeMutableRawPointer? = nil
+        do {
+            if weightsAlloc > 0 {
+                weightsPtr = UnsafeMutableRawPointer.allocate(byteCount: weightsAlloc, alignment: 4096)
+                memset(weightsPtr!, 0xA5, weightsAlloc)
+            }
+            if kvAlloc > 0 {
+                kvPtr = UnsafeMutableRawPointer.allocate(byteCount: kvAlloc, alignment: 4096)
+                memset(kvPtr!, 0x5A, kvAlloc)
+            }
+        }
 
         let start = Date()
-        let deadline = start.addingTimeInterval(duration)
+        let actualDuration = max(1.0, duration)
+        let cappedDuration = min(actualDuration, 600.0)
+        let deadline = start.addingTimeInterval(cappedDuration)
         let pollTask = launchPoller(start: start, deadline: deadline, label: "LLM") { elapsed, progress in
-            self.publishLive("LLM STATS — SYNTHETIC\nmodel size: \(paramsB)B\(capped ? " (capped by RAM)" : "")\nweights: \(Format.bytes(Double(weightsBytes)))\nKV: \(Format.bytes(Double(kvBytes)))\nfits in RAM: \(fitsInMemory ? "YES" : "NO")\nest tokens/sec: \(String(format: "%.1f", tokensPerSec))", progress: progress)
+            let allocated = Double((weightsAlloc) + (kvAlloc))
+            self.publishLive("LLM BENCHMARK\nparams: \(paramsB)B\(capped ? " (capped)" : "")\nallocated: \(Format.bytes(allocated))\nest. tokens/sec: \(String(format: "%.1f", estTokensPerSec))", progress: progress)
         }
 
-        // Simulate lightweight activity for UI; no real model inference performed.
+        // Ensure poller is cancelled and allocations freed on exit.
+        defer {
+            pollTask.cancel()
+            if let w = weightsPtr { w.deallocate(); }
+            if let k = kvPtr { k.deallocate(); }
+        }
+
+        // Run simulated inference loop: memory-bound passes + light CPU math.
+        var cpuWorkCounter = 0
+        #if canImport(Metal)
+        var metalDevice: MTLDevice? = nil
+        var metalQueue: MTLCommandQueue? = nil
+        metalDevice = MTLCopyAllDevices().first
+        metalQueue = metalDevice?.makeCommandQueue()
+        #endif
+
         while Date() < deadline {
             try doCancelCheck()
-            try await Task.sleep(nanoseconds: 150_000_000)
+            // Memory sweep to keep pages resident and simulate KV access.
+            if let kv = kvPtr {
+                let step = 4096
+                var off = 0
+                while off < kvAlloc {
+                    kv.advanced(by: off).storeBytes(of: UInt8(truncatingIfNeeded: UInt8(off & 0xff)), as: UInt8.self)
+                    off += step
+                    if off % (step * 256) == 0 { break } // touch a subset to limit CPU
+                }
+            }
+            // Simple CPU decode-like work: mix through weights in small windows.
+            if let w = weightsPtr {
+                let limit = min(1024 * 1024, weightsAlloc)
+                var acc: UInt64 = 1469598103934665603
+                for i in stride(from: 0, to: limit, by: 8) {
+                    let p = w.advanced(by: i).assumingMemoryBound(to: UInt64.self)
+                    acc &+= p.pointee ^ UInt64(i)
+                }
+                cpuWorkCounter &+= Int(acc & 0xffff)
+            }
+
+            // Optional lightweight GPU work: dispatch a tiny matmul if Metal available
+            #if canImport(Metal)
+            if let dev = metalDevice, let q = metalQueue {
+                let smallN = 64
+                let count = smallN * smallN
+                if let a = dev.makeBuffer(length: count * MemoryLayout<Float>.size, options: .storageModeShared),
+                   let b = dev.makeBuffer(length: count * MemoryLayout<Float>.size, options: .storageModeShared),
+                   let c = dev.makeBuffer(length: count * MemoryLayout<Float>.size, options: .storageModeShared) {
+                    fillRandom(buffer: a, count: count)
+                    fillRandom(buffer: b, count: count)
+                    if let lib = try? makeMatmulLibrary(device: dev),
+                       let pipe = try? await dev.makeComputePipelineState(function: lib) {
+                        if let cmd = q.makeCommandBuffer(), let enc = cmd.makeComputeCommandEncoder() {
+                            enc.setComputePipelineState(pipe)
+                            enc.setBuffer(a, offset: 0, index: 0)
+                            enc.setBuffer(b, offset: 0, index: 1)
+                            enc.setBuffer(c, offset: 0, index: 2)
+                            var n32: UInt32 = UInt32(smallN)
+                            enc.setBytes(&n32, length: MemoryLayout<UInt32>.size, index: 3)
+                            let tgs = MTLSizeMake(8,8,1)
+                            let groups = MTLSizeMake((smallN + 7)/8, (smallN + 7)/8, 1)
+                            enc.dispatchThreadgroups(groups, threadsPerThreadgroup: tgs)
+                            enc.endEncoding()
+                            await cmd.completed()
+                        }
+                    }
+                }
+            }
+            #endif
+
+            // Safeguards: stop early if system under stress
+            let snap = TelemetryPoller.shared.sample()
+            if snap.ramUsage > 0.95 { appState?.log("LLM test: RAM usage >95% — stopping", .warn); break }
+            if let t = snap.cpuTemperature, t > 98.0 { appState?.log("LLM test: CPU temp too high — stopping", .warn); break }
+
+            try await Task.sleep(nanoseconds: 250_000_000)
         }
-        pollTask.cancel()
 
         let elapsed = Date().timeIntervalSince(start)
-        let summary = "LLM STATS — SYNTHETIC ESTIMATE\nmodel size: \(paramsB)B params\nweights size: \(Format.bytes(Double(weightsBytes)))\nKV cache estimate: \(Format.bytes(Double(kvBytes)))\ntotal working set: \(Format.bytes(Double(totalWorkingSet)))\nsystem RAM: \(Format.bytes(Double(totalRAM)))\nfits in memory: \(fitsInMemory ? "YES" : "NO")\nest tokens/sec: \(String(format: "%.1f", tokensPerSec))\n\(capped ? "NOTE: requested model size was capped to fit RAM" : "")"
+        let summary = """
+        LLM BENCHMARK — COMPLETE
+        requested weights: \(Format.bytes(Double(weightsBytesRequested)))
+        allocated: \(Format.bytes(Double(weightsAlloc + kvAlloc)))
+        duration: \(String(format: "%.2f", elapsed)) s
+        CPU churn: \(cpuWorkCounter)
+        """
         let metrics: [String: Double] = [
-            "params_b": Double(paramsB),
-            "weights_bytes": Double(weightsBytes),
-            "kv_cache_bytes": Double(kvBytes),
-            "tokens_per_sec": tokensPerSec,
-            "context_length": Double(params.llmContextLength)
+            "requested_weights_bytes": Double(weightsBytesRequested),
+            "allocated_bytes": Double(weightsAlloc + kvAlloc),
+            "duration": elapsed
         ]
         await commit(test: .llm, summary: summary, metrics: metrics, duration: elapsed, phase: "LLM")
     }

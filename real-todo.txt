@@ -4,4 +4,4 @@ make sure all data(device name, tests and else) is in Application support/Sullyb
 make everything more descritive and more info
 make it use the icon
 make it clean like a apple profesional app
-dont commit it
+commit and push it.

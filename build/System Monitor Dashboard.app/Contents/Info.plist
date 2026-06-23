@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Human-readable bundle name (shown in the Dock / menu bar). -->
+    <key>CFBundleName</key>
+    <string>System Monitor Dashboard</string>
+
+    <!-- The executable name must match the SwiftPM executable target name. -->
+    <key>CFBundleExecutable</key>
+    <string>SystemMonitorDashboard</string>
+
+    <!-- App icon (App.icns placed into Resources/) -->
+    <key>CFBundleIconFile</key>
+    <string>App</string>
+
+    <!-- Reverse-DNS identifier. Matches the "sullybase" namespace used by the
+         app's internal persistence paths under Application Support. -->
+    <key>CFBundleIdentifier</key>
+    <string>com.sullybase.system-monitor-dashboard</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <!-- A normal foreground app: shows in the Dock with its own menu bar. -->
+    <key>LSUIElement</key>
+    <false/>
+
+    <!-- Matches the deployment target in Package.swift (macOS 13 / Ventura). -->
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+
+    <!-- Retina-capable rendering. -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Local-only app: no network listeners, no incoming connections.
+         Entries present so the OS never pops a firewall prompt on launch. -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+    </dict>
+
+    <!-- Single-window app; we manage windows ourselves via SwiftUI scenes. -->
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>
