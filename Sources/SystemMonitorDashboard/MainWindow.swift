@@ -10,6 +10,7 @@ import SwiftUI
 
 struct MainWindow: View {
     @EnvironmentObject var state: AppState
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         ScrollView {
@@ -43,11 +44,16 @@ struct MainWindow: View {
                     .foregroundColor(Theme.mutedText)
             }
             Spacer()
-            HStack(spacing: 6) {
-                StatusDot(running: state.running)
-                Text(state.running ? "Running" : "Stopped")
-                    .font(Theme.mono(Theme.FontSize.body).bold())
-                    .foregroundColor(state.running ? Theme.accent : Theme.mutedText)
+            HStack(spacing: 8) {
+                Button(action: { openWindow(id: "remote-share") }) { Image(systemName: "network") }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Share view")
+                HStack(spacing: 6) {
+                    StatusDot(running: state.running)
+                    Text(state.running ? "Running" : "Stopped")
+                        .font(Theme.mono(Theme.FontSize.body).bold())
+                        .foregroundColor(state.running ? Theme.accent : Theme.mutedText)
+                }
             }
         }
     }

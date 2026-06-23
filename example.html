@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Telemetry — Remote System Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;
+    --bg-2:#0d1219;
+    --panel:#111722;
+    --panel-2:#0d131c;
+    --border:#1f2937;
+    --text:#e6edf3;
+    --muted:#7d8590;
+    --accent:#5eead4;
+    --accent-dim:#1f5f59;
+    --accent-soft:rgba(94,234,212,0.12);
+    --warn:#fbbf24;
+    --danger:#fb7185;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 1px) 0 0/22px 22px,
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+
+  /* ---------- shell ---------- */
+  .wrap{
+    flex:1;
+    width:100%;
+    max-width:1040px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+
+  /* ---------- connect screen ---------- */
+  #connect-screen{
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:1;
+  }
+  .connect-card{
+    width:100%;
+    max-width:420px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:30px 28px 26px;
+    position:relative;
+  }
+  .corner{
+    position:absolute; width:14px; height:14px;
+    border-color:var(--accent); opacity:.7;
+  }
+  .corner.tl{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid;border-top-left-radius:4px;}
+  .corner.br{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid;border-bottom-right-radius:4px;}
+
+  .brand{
+    display:flex; align-items:center; gap:10px; margin-bottom:4px;
+  }
+  .pulse-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 0 rgba(94,234,212,.6);
+    animation:pulseDot 2s infinite;
+  }
+  @keyframes pulseDot{
+    0%{box-shadow:0 0 0 0 rgba(94,234,212,.5);}
+    70%{box-shadow:0 0 0 8px rgba(94,234,212,0);}
+    100%{box-shadow:0 0 0 0 rgba(94,234,212,0);}
+  }
+  .brand h1{
+    font-size:18px; margin:0; font-weight:600; letter-spacing:.2px;
+  }
+  .brand-sub{
+    color:var(--muted); font-size:12.5px; margin:2px 0 22px; line-height:1.5;
+  }
+
+  label.field-label{
+    display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--accent); margin:16px 0 6px; font-weight:600;
+  }
+  input.field{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:11px 12px;
+    font-size:14px;
+    font-family:'JetBrains Mono',monospace;
+    outline:none;
+    transition:border-color .15s;
+  }
+  input.field::placeholder{color:#4b5563;}
+  input.field:focus{border-color:var(--accent);}
+  input#key-input{letter-spacing:.18em; text-transform:uppercase; font-size:16px; font-weight:700;}
+
+  .remember-row{
+    display:flex; align-items:center; gap:8px; margin-top:14px;
+  }
+  .remember-row input{accent-color:var(--accent);}
+  .remember-row label{font-size:12.5px; color:var(--muted); cursor:pointer;}
+
+  .btn{
+    width:100%;
+    margin-top:20px;
+    background:var(--accent-dim);
+    color:var(--accent);
+    border:1px solid var(--accent-dim);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:13.5px;
+    font-weight:700;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+    font-family:'Inter',sans-serif;
+  }
+  .btn:hover{background:var(--accent); color:#04201d;}
+  .btn:disabled{opacity:.5; cursor:default;}
+  .btn.secondary{
+    background:transparent; color:var(--muted); border-color:var(--border);
+    margin-top:10px;
+  }
+  .btn.secondary:hover{background:var(--panel-2); color:var(--text);}
+  .btn.danger-outline{
+    background:transparent;color:var(--danger);border-color:#3a1c22;
+  }
+  .btn.danger-outline:hover{background:#3a1c22;color:#fca5b1;}
+
+  .helper{
+    margin-top:18px; font-size:11.5px; color:var(--muted); line-height:1.6;
+    border-top:1px solid var(--border); padding-top:14px;
+  }
+  .helper b{color:var(--text); font-weight:600;}
+
+  #connect-error{
+    display:none;
+    margin-top:14px;
+    background:rgba(251,113,133,0.08);
+    border:1px solid rgba(251,113,133,0.35);
+    color:#fca5b1;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12.5px;
+    line-height:1.55;
+  }
+
+  /* ---------- dashboard screen ---------- */
+  #dashboard-screen{display:none;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+    margin-bottom:22px;
+  }
+  .topbar-left{display:flex; align-items:center; gap:14px;}
+  .host-name{font-size:19px; font-weight:600;}
+  .host-meta{color:var(--muted); font-size:12px; margin-top:2px;}
+  .topbar-right{display:flex; align-items:center; gap:10px;}
+  .live-pill{
+    display:flex; align-items:center; gap:7px;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:999px; padding:6px 12px; font-size:11.5px; color:var(--muted);
+  }
+  .live-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulseDot 2s infinite;}
+  .icon-btn{
+    background:var(--panel); border:1px solid var(--border); color:var(--muted);
+    border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer;
+  }
+  .icon-btn:hover{color:var(--text); border-color:#374151;}
+
+  /* signature: ekg pulse strip */
+  .pulse-strip{
+    width:100%; height:34px; margin-bottom:22px;
+    border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--panel);
+    overflow:hidden;
+  }
+  .pulse-strip svg{width:200%; height:100%; animation:scrollPulse 5s linear infinite;}
+  @keyframes scrollPulse{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .card-label{
+    font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--muted); font-weight:600; display:flex; justify-content:space-between; align-items:center;
+  }
+  .card-value{
+    font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; margin-top:8px;
+  }
+  .card-sub{color:var(--muted); font-size:12px; margin-top:4px;}
+  .bar-track{
+    width:100%; height:6px; background:var(--panel-2); border-radius:4px; margin-top:12px; overflow:hidden;
+  }
+  .bar-fill{height:100%; border-radius:4px; background:var(--accent); transition:width .5s ease, background .3s ease; width:0%;}
+
+  .cores-row{display:flex; gap:3px; margin-top:12px; flex-wrap:wrap;}
+  .core-bar{
+    flex:1; min-width:5px; height:18px; background:var(--panel-2); border-radius:2px; position:relative; overflow:hidden;
+  }
+  .core-bar i{position:absolute; bottom:0; left:0; right:0; background:var(--accent-dim); transition:height .5s ease;}
+
+  .section-title{
+    font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent);
+    font-weight:700; margin:26px 0 10px;
+  }
+
+  table.proc-table{width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:12.5px;}
+  table.proc-table th{
+    text-align:left; color:var(--muted); font-weight:600; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.05em; padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  table.proc-table td{padding:9px 10px; border-bottom:1px solid var(--panel-2); color:var(--text);}
+  table.proc-table tr:last-child td{border-bottom:none;}
+  table.proc-table td.num{text-align:right; color:var(--muted);}
+
+  .ollama-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--panel-2); font-size:13px;}
+  .ollama-row:last-child{border-bottom:none;}
+  .badge{
+    font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; letter-spacing:.03em;
+  }
+  .badge.on{background:rgba(94,234,212,.12); color:var(--accent);}
+  .badge.off{background:rgba(125,133,144,.12); color:var(--muted);}
+
+  .footer-status{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:24px; font-size:11px; color:var(--muted);
+  }
+
+  @media (max-width:560px){
+    .card-value{font-size:24px;}
+    .topbar{align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ===================== CONNECT SCREEN ===================== -->
+  <div id="connect-screen">
+    <div class="connect-card">
+      <div class="corner tl"></div><div class="corner br"></div>
+      <div class="brand">
+        <span class="pulse-dot"></span>
+        <h1 class="display">Telemetry Link</h1>
+      </div>
+      <p class="brand-sub">Connect to a System Monitor server running on the same Wi-Fi network. Read-only — nothing here can change settings on that machine.</p>
+
+      <label class="field-label" for="host-input">Server address</label>
+      <input class="field" id="host-input" placeholder="https://192.168.1.23:8765" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+      <label class="field-label" for="key-input">Connection key</label>
+      <input class="field" id="key-input" placeholder="ABCD1234" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+      <div class="remember-row">
+        <input type="checkbox" id="remember-check">
+        <label for="remember-check">Remember on this device (stored only in this browser)</label>
+      </div>
+
+      <button class="btn" id="connect-btn">Connect</button>
+      <div id="connect-error"></div>
+
+      <div class="helper">
+        <b>Where do I find this?</b> Open the System Monitor app on the host computer — the address and key are shown right in its window.<br><br>
+        <b>First time on HTTPS?</b> Open the server address above directly in a new tab once, click <b>Advanced → Proceed</b> to trust its certificate, then come back here and connect.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== DASHBOARD SCREEN ===================== -->
+  <div id="dashboard-screen">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div>
+          <div class="host-name display" id="d-hostname">—</div>
+          <div class="host-meta mono" id="d-meta">—</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-pill"><span class="dot"></span><span id="d-updated">live</span></div>
+        <button class="icon-btn" id="disconnect-btn">Disconnect</button>
+      </div>
+    </div>
+
+    <div class="pulse-strip">
+      <svg viewBox="0 0 600 34" preserveAspectRatio="none">
+        <path d="M0,17 L60,17 L75,4 L90,30 L105,17 L160,17 L175,8 L190,26 L205,17 L300,17 L315,4 L330,30 L345,17 L400,17 L415,8 L430,26 L445,17 L600,17"
+          fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.55"/>
+        <path d="M600,17 L660,17 L675,4 L690,30 L705,17 L760,17 L775,8 L790,26 L805,17 L900,17 L915,4 L930,30 L945,17 L1000,17 L1015,8 L1030,26 L1045,17 L1200,17"
+          fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.55"/>
+      </svg>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">CPU <span id="cpu-cores-label"></span></div>
+        <div class="card-value" id="cpu-value">—</div>
+        <div class="card-sub" id="cpu-sub">—</div>
+        <div class="bar-track"><div class="bar-fill" id="cpu-bar"></div></div>
+        <div class="cores-row" id="cpu-cores"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Memory</div>
+        <div class="card-value" id="ram-value">—</div>
+        <div class="card-sub" id="ram-sub">—</div>
+        <div class="card-sub" id="ram-swap-sub" style="margin-top:2px;">—</div>
+        <div class="bar-track"><div class="bar-fill" id="ram-bar"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Disk</div>
+        <div class="card-value" id="disk-value">—</div>
+        <div class="card-sub" id="disk-sub">—</div>
+        <div class="card-sub" id="disk-io-sub" style="margin-top:2px;">—</div>
+        <div class="bar-track"><div class="bar-fill" id="disk-bar"></div></div>
+      </div>
+      <div class="card" id="gpu-card">
+        <div class="card-label">GPU</div>
+        <div class="card-value" id="gpu-value">—</div>
+        <div class="card-sub" id="gpu-sub">—</div>
+        <div class="bar-track"><div class="bar-fill" id="gpu-bar"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Network</div>
+        <div class="card-value" id="net-value" style="font-size:20px;">—</div>
+        <div class="card-sub" id="net-sub">—</div>
+        <div class="card-sub" id="net-rate-sub" style="margin-top:2px;">—</div>
+      </div>
+      <div class="card" id="battery-card" style="display:none;">
+        <div class="card-label">Battery</div>
+        <div class="card-value" id="batt-value">—</div>
+        <div class="card-sub" id="batt-sub">—</div>
+        <div class="bar-track"><div class="bar-fill" id="batt-bar"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-label">System</div>
+        <div class="card-value" id="sys-value" style="font-size:18px;">—</div>
+        <div class="card-sub" id="sys-sub">—</div>
+        <div class="card-sub" id="sys-sub-2" style="margin-top:2px;">—</div>
+      </div>
+    </div>
+
+    <div class="section-title">Disk volumes</div>
+    <div class="card" style="padding:6px 8px;">
+      <table class="proc-table">
+        <thead><tr><th>Mount</th><th>Type</th><th style="text-align:right;">Used</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody id="partitions-body"><tr><td colspan="4" style="color:var(--muted);">Waiting for data…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Top processes</div>
+    <div class="card" style="padding:6px 8px;">
+      <table class="proc-table">
+        <thead><tr><th>PID</th><th>Name</th><th>User</th><th style="text-align:right;">Threads</th><th style="text-align:right;">CPU</th><th style="text-align:right;">Mem</th></tr></thead>
+        <tbody id="proc-body"><tr><td colspan="6" style="color:var(--muted);">Waiting for data…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Ollama</div>
+    <div class="card" id="ollama-card">
+      <div class="ollama-row">
+        <span>Status</span>
+        <span class="badge off" id="ollama-badge">UNKNOWN</span>
+      </div>
+      <div id="ollama-models"></div>
+    </div>
+
+    <div class="section-title">AI Benchmark</div>
+    <div class="card" id="bench-card">
+      <div id="bench-live" style="display:none; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px; color:var(--muted);">
+          <span id="bench-live-phase">Running…</span>
+          <span id="bench-live-time" class="mono"></span>
+        </div>
+        <div class="bar-track" style="margin-top:8px;"><div class="bar-fill" id="bench-live-bar"></div></div>
+        <div class="mono" id="bench-live-metrics" style="font-size:11.5px; color:var(--muted); margin-top:8px; white-space:pre-wrap;"></div>
+      </div>
+      <div id="bench-idle" style="color:var(--muted); font-size:12.5px;">No benchmark running. Tests are started from the System Monitor app on the host computer — this page only displays live progress and results.</div>
+      <div id="bench-last" style="margin-top:14px; display:none;">
+        <div class="card-label" style="margin-bottom:8px;">Last result <span id="bench-last-meta" style="text-transform:none; color:var(--muted); font-weight:500;"></span></div>
+        <div id="bench-last-headline" class="display" style="font-size:20px; color:var(--accent); font-weight:700; margin-bottom:8px;"></div>
+        <div id="bench-last-body" class="mono" style="font-size:12px; line-height:1.7; color:var(--muted); white-space:pre-wrap;"></div>
+      </div>
+      <div id="bench-history" style="margin-top:18px; display:none;">
+        <div class="card-label" style="margin-bottom:8px;">Recent runs</div>
+        <table class="proc-table">
+          <thead><tr><th>Time</th><th>Test</th><th style="text-align:right;">Key metric</th></tr></thead>
+          <tbody id="bench-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer-status">
+      <span id="footer-left">Polling every 3s</span>
+      <span id="footer-right" class="mono"></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const POLL_MS = 3000;
+  const MAX_CONSEC_FAILS = 4;
+
+  const connectScreen = document.getElementById('connect-screen');
+  const dashScreen = document.getElementById('dashboard-screen');
+  const hostInput = document.getElementById('host-input');
+  const keyInput = document.getElementById('key-input');
+  const rememberCheck = document.getElementById('remember-check');
+  const connectBtn = document.getElementById('connect-btn');
+  const connectError = document.getElementById('connect-error');
+  const disconnectBtn = document.getElementById('disconnect-btn');
+
+  let pollTimer = null;
+  let consecFails = 0;
+  let currentHost = '';
+  let currentKey = '';
+
+  // ---------- restore remembered connection ----------
+  try {
+    const saved = JSON.parse(localStorage.getItem('sysmon_conn') || 'null');
+    if (saved && saved.host) {
+      hostInput.value = saved.host;
+      keyInput.value = saved.key || '';
+      rememberCheck.checked = true;
+    }
+  } catch (e) {}
+
+  function showError(msg){
+    connectError.innerHTML = msg;
+    connectError.style.display = 'block';
+  }
+  function clearError(){
+    connectError.style.display = 'none';
+    connectError.innerHTML = '';
+  }
+
+  function normalizeHost(raw){
+    let h = raw.trim();
+    if (!/^https?:\/\//i.test(h)) h = 'https://' + h;
+    return h.replace(/\/+$/, '');
+  }
+
+  async function tryConnect(){
+    const host = normalizeHost(hostInput.value);
+    const key = keyInput.value.trim().toUpperCase();
+    if (!hostInput.value.trim() || !key){
+      showError('Enter both the server address and the connection key.');
+      return;
+    }
+    clearError();
+    connectBtn.disabled = true;
+    connectBtn.textContent = 'Connecting…';
+
+    try {
+      const res = await fetch(`${host}/api/stats?key=${encodeURIComponent(key)}`, { cache: 'no-store' });
+      if (res.status === 401){
+        showError('That key was rejected. Double-check the key shown in the System Monitor app — it may have been regenerated.');
+        return;
+      }
+      if (res.status === 429){
+        showError('Too many failed attempts from this device. Wait about a minute and try again.');
+        return;
+      }
+      if (!res.ok){
+        showError(`Server responded with an unexpected status (${res.status}).`);
+        return;
+      }
+      const data = await res.json();
+
+      currentHost = host;
+      currentKey = key;
+
+      if (rememberCheck.checked){
+        localStorage.setItem('sysmon_conn', JSON.stringify({ host: hostInput.value.trim(), key }));
+      } else {
+        localStorage.removeItem('sysmon_conn');
+      }
+
+      consecFails = 0;
+      renderStats(data);
+      connectScreen.style.display = 'none';
+      dashScreen.style.display = 'block';
+      startPolling();
+
+    } catch (err){
+      showError(
+        'Could not reach that address. Things to check:<br>' +
+        '&bull; This device and the host computer are on the <b>same Wi-Fi network</b>.<br>' +
+        '&bull; The address matches exactly what the app shows, including <b>https://</b> and the port.<br>' +
+        '&bull; If this is your first connection over HTTPS, open the address in a new tab once and accept the certificate warning, then try again.'
+      );
+    } finally {
+      connectBtn.disabled = false;
+      connectBtn.textContent = 'Connect';
+    }
+  }
+
+  connectBtn.addEventListener('click', tryConnect);
+  [hostInput, keyInput].forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryConnect();
+  }));
+
+  function disconnect(){
+    stopPolling();
+    dashScreen.style.display = 'none';
+    connectScreen.style.display = 'flex';
+    clearError();
+  }
+  disconnectBtn.addEventListener('click', disconnect);
+
+  function startPolling(){
+    stopPolling();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+  function stopPolling(){
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  async function poll(){
+    try {
+      const res = await fetch(`${currentHost}/api/stats?key=${encodeURIComponent(currentKey)}`, { cache: 'no-store' });
+      if (res.status === 401){
+        stopPolling();
+        showError('The connection key changed or expired. Reconnect with the current key.');
+        disconnect();
+        return;
+      }
+      if (!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      consecFails = 0;
+      renderStats(data);
+      document.getElementById('d-updated').textContent = 'live';
+    } catch (err){
+      consecFails++;
+      document.getElementById('d-updated').textContent = 'reconnecting…';
+      if (consecFails >= MAX_CONSEC_FAILS){
+        stopPolling();
+        showError('Lost connection to the server. It may have been closed, or you changed networks.');
+        disconnect();
+      }
+    }
+  }
+
+  function pct(v){ return (v === null || v === undefined) ? 0 : Math.max(0, Math.min(100, v)); }
+  function barColor(v){
+    if (v >= 90) return 'var(--danger)';
+    if (v >= 70) return 'var(--warn)';
+    return 'var(--accent)';
+  }
+  function setBar(id, value){
+    const el = document.getElementById(id);
+    el.style.width = pct(value) + '%';
+    el.style.background = barColor(value);
+  }
+  function fmtUptime(sec){
+    sec = sec || 0;
+    const d = Math.floor(sec/86400), h = Math.floor((sec%86400)/3600), m = Math.floor((sec%3600)/60);
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
+  function renderStats(data){
+    document.getElementById('d-hostname').textContent = data.device_name || data.hostname || 'Unknown host';
+    document.getElementById('d-meta').textContent =
+      `uptime ${fmtUptime(data.uptime_seconds)} · ${currentHost.replace(/^https?:\/\//,'')}`;
+    document.getElementById('footer-right').textContent = new Date(data.timestamp || Date.now()).toLocaleTimeString();
+
+    // CPU
+    const cpu = data.cpu || {};
+    document.getElementById('cpu-value').textContent = (cpu.percent ?? 0).toFixed(0) + '%';
+    document.getElementById('cpu-cores-label').textContent = cpu.core_count ? `(${cpu.core_count} cores)` : '';
+    setBar('cpu-bar', cpu.percent);
+    const cpuSubParts = [];
+    if (cpu.physical_cores) cpuSubParts.push(`${cpu.physical_cores}P/${cpu.core_count ?? '—'}L cores`);
+    if (cpu.freq_current_mhz) cpuSubParts.push(`${(cpu.freq_current_mhz/1000).toFixed(2)} GHz`);
+    if (cpu.load_avg) cpuSubParts.push(`load ${cpu.load_avg.join(', ')}`);
+    document.getElementById('cpu-sub').textContent = cpuSubParts.join(' · ') || '—';
+    const coresRow = document.getElementById('cpu-cores');
+    const cores = cpu.per_core || [];
+    if (cores.length){
+      coresRow.innerHTML = cores.map(v =>
+        `<div class="core-bar"><i style="height:${pct(v)}%; background:${barColor(v)}"></i></div>`
+      ).join('');
+    } else {
+      coresRow.innerHTML = '';
+    }
+
+    // RAM
+    const ram = data.ram || {};
+    document.getElementById('ram-value').textContent = (ram.percent ?? 0).toFixed(0) + '%';
+    document.getElementById('ram-sub').textContent = `${ram.used_gb ?? '—'} / ${ram.total_gb ?? '—'} GB · ${ram.available_gb ?? '—'} GB free`;
+    setBar('ram-bar', ram.percent);
+    const swapTotal = ram.swap_total_gb ?? 0;
+    document.getElementById('ram-swap-sub').textContent = swapTotal > 0
+      ? `Swap: ${ram.swap_used_gb ?? 0} / ${swapTotal} GB`
+      : 'Swap: not in use';
+
+    // Disk
+    const disk = data.disk || {};
+    document.getElementById('disk-value').textContent = (disk.percent ?? 0).toFixed(0) + '%';
+    document.getElementById('disk-sub').textContent = `${disk.used_gb ?? '—'} / ${disk.total_gb ?? '—'} GB · ${disk.free_gb ?? '—'} GB free`;
+    setBar('disk-bar', disk.percent);
+    const io = disk.io || {};
+    document.getElementById('disk-io-sub').textContent =
+      (io.read_mbps != null || io.write_mbps != null)
+        ? `R ${io.read_mbps ?? 0} MB/s · W ${io.write_mbps ?? 0} MB/s`
+        : '—';
+    const partBody = document.getElementById('partitions-body');
+    const parts = disk.partitions || [];
+    partBody.innerHTML = parts.length ? parts.map(p =>
+      `<tr><td>${escapeHtml(p.mountpoint)}</td><td>${escapeHtml(p.fstype)}</td><td class="num">${p.used_gb} GB</td><td class="num">${p.total_gb} GB</td></tr>`
+    ).join('') : '<tr><td colspan="4" style="color:var(--muted);">No volume data</td></tr>';
+
+    // GPU
+    const gpus = data.gpu || [];
+    if (gpus.length){
+      const g = gpus[0];
+      const extra = gpus.length > 1 ? ` (+${gpus.length - 1} more)` : '';
+      if (g.load_percent == null){
+        document.getElementById('gpu-value').textContent = 'N/A';
+        document.getElementById('gpu-sub').textContent =
+          `${g.name || 'GPU'}${extra}` + (g.unavailable_reason ? ` · ${g.unavailable_reason}` : '');
+        setBar('gpu-bar', 0);
+      } else {
+        document.getElementById('gpu-value').textContent = g.load_percent.toFixed(0) + '%';
+        document.getElementById('gpu-sub').textContent =
+          `${g.name || 'GPU'}${extra} · ${g.memory_used_mb ?? '—'}/${g.memory_total_mb ?? '—'} MB` +
+          (g.temperature_c ? ` · ${g.temperature_c}°C` : '');
+        setBar('gpu-bar', g.load_percent);
+      }
+    } else {
+      document.getElementById('gpu-value').textContent = 'N/A';
+      document.getElementById('gpu-sub').textContent = 'No supported GPU detected';
+      setBar('gpu-bar', 0);
+    }
+
+    // Network
+    const net = data.network || {};
+    document.getElementById('net-value').textContent = `↑${net.up_kbps ?? 0} / ↓${net.down_kbps ?? 0} KB/s`;
+    document.getElementById('net-sub').textContent = `Total: ↑ ${net.sent_mb ?? 0} MB · ↓ ${net.recv_mb ?? 0} MB`;
+    document.getElementById('net-rate-sub').textContent = 'Since this server last started';
+
+    // Battery
+    const battCard = document.getElementById('battery-card');
+    if (data.battery){
+      battCard.style.display = 'block';
+      document.getElementById('batt-value').textContent = data.battery.percent.toFixed(0) + '%';
+      const mins = data.battery.minutes_remaining;
+      const timeStr = mins ? ` · ${Math.floor(mins/60)}h ${mins%60}m left` : '';
+      document.getElementById('batt-sub').textContent = (data.battery.plugged_in ? 'Plugged in' : 'On battery') + timeStr;
+      setBar('batt-bar', data.battery.percent);
+    } else {
+      battCard.style.display = 'none';
+    }
+
+    // System
+    const sys = data.system || {};
+    document.getElementById('sys-value').textContent = sys.os ? `${sys.os} ${sys.os_version || ''}`.trim() : '—';
+    document.getElementById('sys-sub').textContent = `${sys.arch || '—'}${sys.apple_silicon ? ' (Apple Silicon)' : ''} · ${sys.process_count ?? '—'} processes`;
+    document.getElementById('sys-sub-2').textContent = sys.current_user ? `User: ${sys.current_user}` : '—';
+
+    // Top processes
+    const procs = data.top_processes || [];
+    const body = document.getElementById('proc-body');
+    body.innerHTML = procs.length ? procs.map(p =>
+      `<tr><td>${p.pid}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.username || '—')}</td><td class="num">${p.num_threads ?? '—'}</td><td class="num">${p.cpu_percent.toFixed(1)}%</td><td class="num">${p.memory_percent.toFixed(1)}%</td></tr>`
+    ).join('') : '<tr><td colspan="6" style="color:var(--muted);">No process data</td></tr>';
+
+    // Ollama
+    const ollama = data.ollama || { running:false, loaded_models:[] };
+    const badge = document.getElementById('ollama-badge');
+    badge.textContent = ollama.running ? 'RUNNING' : 'NOT RUNNING';
+    badge.className = 'badge ' + (ollama.running ? 'on' : 'off');
+    const modelsDiv = document.getElementById('ollama-models');
+    if (ollama.running && ollama.loaded_models && ollama.loaded_models.length){
+      modelsDiv.innerHTML = ollama.loaded_models.map(m =>
+        `<div class="ollama-row"><span>${escapeHtml(m.name || 'model')}</span>` +
+        `<span class="mono" style="color:var(--muted); font-size:11.5px;">${m.vram_gb ? m.vram_gb + ' GB VRAM' : (m.size_gb ? m.size_gb + ' GB' : '')}</span></div>`
+      ).join('');
+    } else {
+      modelsDiv.innerHTML = `<div class="ollama-row"><span style="color:var(--muted);">${ollama.running ? 'No models currently loaded' : 'Ollama is not reachable on this host'}</span></div>`;
+    }
+
+    // AI Benchmark (stress test engine — read-only mirror of what the
+    // System Monitor app is running or has last run)
+    renderBenchmark(data.stress_test || { running: false });
+  }
+
+  function metricLabel(testType, summary){
+    summary = summary || {};
+    switch(testType){
+      case 'cpu':   return (summary.gflops != null) ? `${summary.gflops} GFLOPS` : '—';
+      case 'ram':   return (summary.bandwidth_gbps != null) ? `${summary.bandwidth_gbps} GB/s` : '—';
+      case 'gpu':   return (summary.tflops != null) ? `${summary.tflops} TFLOPS` : (summary.error ? 'unavailable' : '—');
+      case 'llm':   return (summary.estimated_tokens_per_sec != null) ? `${summary.estimated_tokens_per_sec} tok/s` : (summary.error ? 'error' : '—');
+      case 'suite': return (summary.ai_capability_score != null) ? `Score ${summary.ai_capability_score}` : '—';
+      default: return '—';
+    }
+  }
+
+  function renderBenchmark(st){
+    const live = document.getElementById('bench-live');
+    const idle = document.getElementById('bench-idle');
+    const lastBox = document.getElementById('bench-last');
+    const lastMeta = document.getElementById('bench-last-meta');
+    const lastHeadline = document.getElementById('bench-last-headline');
+    const lastBody = document.getElementById('bench-last-body');
+    const histBox = document.getElementById('bench-history');
+    const histBody = document.getElementById('bench-history-body');
+
+    if (st.running){
+      live.style.display = 'block';
+      idle.style.display = 'none';
+      const phase = st.phase || st.test_type || 'test';
+      document.getElementById('bench-live-phase').textContent =
+        st.test_type === 'suite' ? `Running suite — ${phase}` : `Running: ${phase}`;
+      document.getElementById('bench-live-time').textContent =
+        `${Math.round(st.elapsed_seconds || 0)}s / ${Math.round(st.duration_seconds || 0)}s`;
+      const pct = Math.max(0, Math.min(100, st.progress_percent || 0));
+      const bar = document.getElementById('bench-live-bar');
+      bar.style.width = pct + '%';
+      bar.style.background = 'var(--accent)';
+      const lm = st.live_metrics || {};
+      const lmLines = Object.keys(lm).map(k => `${k}: ${lm[k]}`).join('   ·   ');
+      document.getElementById('bench-live-metrics').textContent = lmLines;
+    } else {
+      live.style.display = 'none';
+      idle.style.display = st.last_result ? 'none' : 'block';
+    }
+
+    if (st.last_result){
+      lastBox.style.display = 'block';
+      const r = st.last_result;
+      const s = r.summary || {};
+      const when = r.timestamp ? new Date(r.timestamp).toLocaleString() : '—';
+      lastMeta.textContent = `· ${r.test_type || '—'} · ${when}`;
+      lastHeadline.textContent = metricLabel(r.test_type, s);
+
+      let lines = [];
+      if (r.test_type === 'llm'){
+        const c = r.config || {};
+        lines.push(`Model: ${c.params_billion ?? '?'}B params  ·  ${c.quantization ?? '—'}  ·  ${c.device ?? '—'}`);
+        lines.push(`Compute: ${s.achieved_tflops ?? '—'} TFLOPS  ·  bandwidth ${s.measured_bandwidth_gbps ?? '—'} GB/s  ·  bound: ${s.bottleneck ?? '—'}`);
+        lines.push(`Est. tokens/sec: ${s.estimated_tokens_per_sec ?? '—'}  (compute-bound ${s.compute_bound_tokens_per_sec ?? '—'}, memory-bound ${s.memory_bound_tokens_per_sec ?? '—'})`);
+        lines.push(`Weights: ${s.model_weights_gb ?? '—'} GB  ·  KV cache @ ${c.context_length ?? '—'} ctx: ${s.kv_cache_gb_at_context ?? '—'} GB`);
+      } else if (r.test_type === 'cpu'){
+        lines.push(`${s.matmuls_completed ?? '—'} matmuls in ${s.elapsed_seconds ?? '—'}s  ·  avg CPU ${s.avg_cpu_percent ?? '—'}%`);
+      } else if (r.test_type === 'ram'){
+        lines.push(`${s.iterations ?? '—'} passes over a ${s.array_size_gb ?? '—'} GB array in ${s.elapsed_seconds ?? '—'}s`);
+      } else if (r.test_type === 'gpu'){
+        if (s.error) { lines.push(s.error); }
+        else { lines.push(`Backend: ${s.backend ?? '—'}  ·  ${s.matmuls_completed ?? '—'} matmuls in ${s.elapsed_seconds ?? '—'}s`); }
+      } else if (r.test_type === 'suite'){
+        ['cpu','ram','gpu','llm'].forEach(k => {
+          const sub = (r.results || {})[k] || {};
+          lines.push(`${k.toUpperCase()}: ${sub.error ? sub.error : metricLabel(k, sub)}`);
+        });
+      }
+      lastBody.textContent = lines.join('\n');
+    }
+
+    const hist = st.history || [];
+    if (hist.length){
+      histBox.style.display = 'block';
+      histBody.innerHTML = hist.slice().reverse().map(h => {
+        const when = h.timestamp ? new Date(h.timestamp).toLocaleTimeString() : '—';
+        return `<tr><td>${escapeHtml(when)}</td><td>${escapeHtml(h.test_type || '—')}</td><td class="num">${escapeHtml(metricLabel(h.test_type, h.summary))}</td></tr>`;
+      }).join('');
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+})();
+</script>
+</body>
+</html>

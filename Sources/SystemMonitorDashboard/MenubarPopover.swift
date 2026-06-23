@@ -13,6 +13,20 @@ struct MenubarPopover: View {
                 Button(action: refresh) { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(BorderlessButtonStyle())
             }
+            // Remote share key (copyable)
+            HStack {
+                Text("Share key:")
+                    .font(.caption)
+                    .foregroundColor(Theme.mutedText)
+                Spacer()
+                Text(RemoteShareManager.shared.key)
+                    .font(.system(.body, design: .monospaced))
+                    .lineLimit(1).truncationMode(.middle)
+                    .textSelection(.enabled)
+                Button(action: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(RemoteShareManager.shared.key, forType: .string) }) {
+                    Image(systemName: "doc.on.doc")
+                }.buttonStyle(BorderlessButtonStyle())
+            }
             Divider()
             HStack(spacing: 12) {
                 VStack(alignment: .leading) {

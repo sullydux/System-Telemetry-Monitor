@@ -56,5 +56,12 @@ struct SystemMonitorDashboardApp: App {
                 }
         }
         .defaultSize(width: 720, height: 640)
+
+        // Remote share link window
+        Window("Remote View Link", id: "remote-share") {
+            RemoteShareWindow()
+                .environmentObject(state)
+        }
+        .defaultSize(width: 520, height: 220)
     }
 }
