@@ -595,6 +595,7 @@ final class BenchmarkEngine: @unchecked Sendable {
             $0.lastResultText = summary
             $0.error = error
             $0.phase = "\(phase) done"
+            $0.running = false
         }
         appState?.log("Benchmark complete: \(test.displayName) (\(String(format: "%.1f", duration))s)", .info)
     }

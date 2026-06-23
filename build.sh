@@ -59,10 +59,16 @@ cp "$BUILT_EXEC" "$MACOS_DIR/$EXEC_NAME"
 
 # Copy the Info.plist descriptor into Contents/.
 cp "$ROOT_DIR/Resources/Info.plist" "$CONTENTS/Info.plist"
-# Copy the app icon so the bundle shows the custom icon in the Dock
-if [[ -f "$ROOT_DIR/App.icns" ]]; then
-  cp "$ROOT_DIR/App.icns" "$RESOURCES_DIR/App.icns"
-fi
+# Copy the app icon so the bundle shows the custom icon in the Dock.
+# Support common locations: repo root, Resources/, Sources/SystemMonitorDashboard/.
+ICON_CANDIDATES=("$ROOT_DIR/App.icns" "$ROOT_DIR/Resources/App.icns" "$ROOT_DIR/Sources/SystemMonitorDashboard/App.icns" "$ROOT_DIR/Sources/App.icns")
+for cand in "${ICON_CANDIDATES[@]}"; do
+  if [[ -f "$cand" ]]; then
+    cp "$cand" "$RESOURCES_DIR/App.icns"
+    echo "==> Using icon: $cand"
+    break
+  fi
+done
 
 # Add a minimal PkgInfo (8 bytes: 'APPL????') — expected by some LaunchServices paths.
 printf 'APPL????' > "$CONTENTS/PkgInfo"
