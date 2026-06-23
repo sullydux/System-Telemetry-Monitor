@@ -4,7 +4,7 @@
 <dict>
     <!-- Human-readable bundle name (shown in the Dock / menu bar). -->
     <key>CFBundleName</key>
-    <string>System Monitor Dashboard</string>
+    <string>Sullybase System Telemetry Monitor</string>
 
     <!-- The executable name must match the SwiftPM executable target name. -->
     <key>CFBundleExecutable</key>
@@ -12,7 +12,7 @@
 
     <!-- App icon (App.icns placed into Resources/) -->
     <key>CFBundleIconFile</key>
-    <string>App</string>
+    <string>App.icns</string>
 
     <!-- Reverse-DNS identifier. Matches the "sullybase" namespace used by the
          app's internal persistence paths under Application Support. -->

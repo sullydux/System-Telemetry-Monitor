@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# build.sh — build the System Monitor Dashboard .app bundle from the CLI.
+# build.sh — build the Sullybase System Telemetry Monitor .app bundle from the CLI.
 #
 # Requires only macOS Command Line Tools (no Xcode needed):
 #   xcode-select --install
@@ -15,7 +15,7 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # Config
 # -----------------------------------------------------------------------------
-APP_NAME="System Monitor Dashboard"
+APP_NAME="Sullybase System Telemetry Monitor"
 EXEC_NAME="SystemMonitorDashboard"          # SwiftPM executable target name
 BUNDLE_ID="com.sullybase.system-monitor-dashboard"
 CONFIG="release"

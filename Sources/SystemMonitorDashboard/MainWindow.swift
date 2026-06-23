@@ -1,6 +1,6 @@
 //
 //  MainWindow.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Primary window: header, VITALS, DEVICE NAME, LIVE LOCAL PREVIEW,
 //  AI STRESS BENCHMARK, CONNECTION LOG, and footer.

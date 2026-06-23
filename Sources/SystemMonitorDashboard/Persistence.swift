@@ -1,6 +1,6 @@
 //
 //  Persistence.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Local-only persistence. All app data lives under:
 //      ~/Library/Application Support/Sullybase-Telemetry/
@@ -166,7 +166,7 @@ final class ResultsStore {
         let file = AppPaths.resultsFolder
             .appendingPathComponent("run-\(stamp)-\(result.testType).txt")
         let header = """
-        System Monitor Dashboard — benchmark report
+        Sullybase System Telemetry Monitor — benchmark report
         Test:       \(result.testType.uppercased())
         Started:    \(result.startedAt)
         Finished:   \(result.finishedAt)

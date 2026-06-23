@@ -1,6 +1,6 @@
 //
 //  BenchmarkWindow.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Secondary window: test type, duration, per-test parameters, controls,
 //  progress, and last result.

@@ -1,6 +1,6 @@
 //
 //  AppState.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Central in-memory state shared by the main and benchmark windows.
 //  All telemetry, logs, preferences, and benchmark state live here.

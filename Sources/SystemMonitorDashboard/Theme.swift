@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Local-only telemetry styling. Dark "terminal telemetry" aesthetic,
 //  teal accent, monospace key/numbers, panel cards with thin borders.

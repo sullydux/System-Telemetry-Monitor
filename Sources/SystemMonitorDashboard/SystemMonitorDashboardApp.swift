@@ -1,6 +1,6 @@
 //
 //  SystemMonitorDashboardApp.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  SwiftUI app entry point. Owns the AppState and presents the main and
 //  benchmark windows. Stops telemetry cleanly on quit.
@@ -18,7 +18,7 @@ struct SystemMonitorDashboardApp: App {
 
     var body: some Scene {
         // Main telemetry window.
-        WindowGroup("System Monitor Dashboard") {
+        WindowGroup("Sullybase System Telemetry Monitor") {
             MainWindow()
                 .environmentObject(state)
                 .onAppear {

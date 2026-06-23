@@ -1,6 +1,6 @@
 //
 //  Format.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Small formatting helpers for telemetry values.
 //

@@ -1,7 +1,0 @@
-make text a bit bigger and easier to read. data is close with what the Stats mac app says but some is off. also there is a GPU on mac. fix else
-make llm stats have more options and actualy use ram. make more info come out of thr tests
-make sure all data(device name, tests and else) is in Application support/Sullybase-Telemetry
-make everything more descritive and more info
-make it use the icon
-make it clean like a apple profesional app
-commit and push it.

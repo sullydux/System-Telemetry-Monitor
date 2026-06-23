@@ -1,7 +1,7 @@
 // swift-tools-version: 5.9
 //
 //  Package.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  SwiftPM manifest. Lets the whole app build and run from the CLI with no
 //  Xcode required — only the macOS Command Line Tools (`xcode-select --install`).

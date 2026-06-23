@@ -1,6 +1,6 @@
 //
 //  Telemetry.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Accurate, local-only reads of Apple Silicon machine vitals.
 //  Everything here runs on the host Mac; nothing touches the network.

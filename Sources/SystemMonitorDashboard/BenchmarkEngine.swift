@@ -1,6 +1,6 @@
 //
 //  BenchmarkEngine.swift
-//  System Monitor Dashboard
+//  Sullybase System Telemetry Monitor
 //
 //  Internal benchmark engine. Runs CPU / RAM / GPU / synthetic-LLM tests on
 //  background threads. No models are downloaded; everything is local.
