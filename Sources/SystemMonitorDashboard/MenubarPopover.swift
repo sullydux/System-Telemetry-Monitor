@@ -13,6 +13,21 @@ struct MenubarPopover: View {
                 Button(action: refresh) { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(BorderlessButtonStyle())
             }
+            // Remote share server address (copyable)
+            HStack {
+                Text("Server:")
+                    .font(.caption)
+                    .foregroundColor(Theme.mutedText)
+                Spacer()
+                Text(ServerAddressManager.shared.address)
+                    .font(.system(.body, design: .monospaced))
+                    .lineLimit(1).truncationMode(.middle)
+                    .textSelection(.enabled)
+                Button(action: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(ServerAddressManager.shared.address, forType: .string) }) {
+                    Image(systemName: "link")
+                }.buttonStyle(BorderlessButtonStyle())
+            }
+
             // Remote share key (copyable)
             HStack {
                 Text("Share key:")

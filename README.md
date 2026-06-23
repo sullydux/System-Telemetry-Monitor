@@ -4,7 +4,7 @@
 
 # Sullybase System Telemetry Monitor
 
-**v1.0.0**
+**v1.2.1**
 
 ---
 

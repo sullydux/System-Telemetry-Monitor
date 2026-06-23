@@ -21,10 +21,10 @@ struct RemoteShareWindow: View {
             VStack(alignment:.leading, spacing:8) {
                 Text("Viewer page").font(.caption).foregroundColor(Theme.mutedText)
                 HStack {
-                    Text("https://sullydux.github.io/System-Telemetry-Monitor/")
+                    Text(ServerAddressManager.shared.address)
                         .font(.system(.body, design: .monospaced))
                         .lineLimit(1).truncationMode(.middle)
-                    Button(action: { mgr.copyLinkToPasteboard() }) { Image(systemName: "doc.on.doc") }
+                    Button(action: { ServerAddressManager.shared.copyServerAddressToPasteboard() }) { Image(systemName: "doc.on.doc") }
                         .buttonStyle(PlainButtonStyle())
                 }
             }
