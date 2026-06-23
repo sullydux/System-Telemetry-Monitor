@@ -44,7 +44,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift"
         },
         {
           "kind" : "file",
@@ -57,6 +65,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
         },
         {
           "kind" : "file",
@@ -76,10 +88,13 @@
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/BenchmarkWindow.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MenubarPopover.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/StatusBarController.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/SystemMonitorDashboardApp.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Telemetry.swift.o",
-        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.swift.o"
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/WindowRegistry.swift.o"
       ],
       "otherArguments" : [
         "-target",
@@ -99,6 +114,7 @@
         "-entry-point-function-name",
         "-Xfrontend",
         "SystemMonitorDashboard_main",
+        "-color-diagnostics",
         "-swift-version",
         "5",
         "-I",
@@ -145,7 +161,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MenubarPopover.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/StatusBarController.swift.o"
         },
         {
           "kind" : "file",
@@ -161,6 +185,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/WindowRegistry.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/Modules/SystemMonitorDashboard.swiftmodule"
         }
       ],
@@ -171,10 +199,13 @@
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkWindow.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Format.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift",
-        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift"
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
       ],
       "tempsPath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build",
       "wholeModuleOptimization" : true
@@ -196,10 +227,13 @@
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkWindow.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Format.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift",
       "-I",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/Modules",
       "-target",
@@ -219,6 +253,7 @@
       "-entry-point-function-name",
       "-Xfrontend",
       "SystemMonitorDashboard_main",
+      "-color-diagnostics",
       "-swift-version",
       "5",
       "-I",
@@ -290,7 +325,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift"
         },
         {
           "kind" : "file",
@@ -303,6 +346,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
         }
       ],
       "outputFilePath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/sources"
@@ -336,7 +383,15 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MenubarPopover.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Persistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/StatusBarController.swift.o"
         },
         {
           "kind" : "file",
@@ -349,6 +404,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Theme.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/WindowRegistry.swift.o"
         }
       ],
       "outputFilePath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.product/Objects.LinkFileList"

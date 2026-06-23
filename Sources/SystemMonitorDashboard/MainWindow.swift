@@ -28,6 +28,7 @@ struct MainWindow: View {
         .background(Theme.background.ignoresSafeArea())
         .frame(minWidth: 760, minHeight: 560)
         .navigationSubtitle("Local only • Apple Silicon")
+        .background(WindowAccessor())
     }
 
     private var header: some View {

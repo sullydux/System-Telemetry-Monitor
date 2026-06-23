@@ -51,7 +51,30 @@ struct MenubarPopover: View {
 
     private func openApp() {
         NSApp.activate(ignoringOtherApps: true)
-        if let w = NSApp.windows.first {
+        if let main = WindowRegistry.shared.mainWindow {
+            if main.isMiniaturized { main.deminiaturize(nil) }
+            main.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        // Prefer windows containing the main title fragments observed at runtime.
+        if let main = NSApp.windows.first(where: {
+            let t = $0.title.lowercased()
+            return t.contains("sullybase system telemetry monitor") || t.contains("local only") || t.contains("system monitor dashboard")
+        }) {
+            if main.isMiniaturized { main.deminiaturize(nil) }
+            main.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        // Avoid the benchmark window specifically; choose any non-benchmark window.
+        if let nonBench = NSApp.windows.first(where: { !$0.title.lowercased().contains("benchmark") }) {
+            if nonBench.isMiniaturized { nonBench.deminiaturize(nil) }
+            nonBench.makeKeyAndOrderFront(nil)
+            return
+        }
+        for w in NSApp.windows {
+            if w.isMiniaturized { w.deminiaturize(nil) }
             w.makeKeyAndOrderFront(nil)
         }
     }

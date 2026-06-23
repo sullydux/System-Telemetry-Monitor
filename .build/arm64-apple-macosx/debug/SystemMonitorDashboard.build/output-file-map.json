@@ -37,12 +37,26 @@
     "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MainWindow.swiftdeps",
     "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MainWindow.dia"
   },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift": {
+    "dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover.d",
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover.dia"
+  },
   "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift": {
     "dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.d",
     "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.swift.o",
     "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence~partial.swiftmodule",
     "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.swiftdeps",
     "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift": {
+    "dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController.d",
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController.dia"
   },
   "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift": {
     "dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/SystemMonitorDashboardApp.d",
