@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:System Telemetry Monitor}",
+            "name": "Debug SystemMonitorDashboard",
+            "target": "SystemMonitorDashboard",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SystemMonitorDashboard"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:System Telemetry Monitor}",
+            "name": "Release SystemMonitorDashboard",
+            "target": "SystemMonitorDashboard",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SystemMonitorDashboard"
+        }
+    ]
+}

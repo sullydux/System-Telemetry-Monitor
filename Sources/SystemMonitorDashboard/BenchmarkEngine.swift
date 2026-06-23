@@ -116,7 +116,7 @@ final class BenchmarkEngine: @unchecked Sendable {
             case .ram:   try await runRam(duration: duration, params: params)
             case .gpu:   try await runGpu(duration: duration, params: params)
             case .llm:   try await runLLM(duration: duration, params: params)
-            case .suite: try await runSuite(duration: duration, params: params)
+            case .suite: await runSuite(duration: duration, params: params)
             }
         } catch is CancellationError {
             await postOnMain { self.appState?.updateBenchmark { $0.error = "Cancelled" } }
@@ -302,7 +302,8 @@ final class BenchmarkEngine: @unchecked Sendable {
 
         let n = nextPow2(max(128, params.gpuMatrixSize))
         let library = try makeMatmulLibrary(device: device)
-        let pipeline = try device.makeComputePipelineState(function: library)
+        // makeComputePipelineState(function:) is async on macOS 26+ SDKs.
+        let pipeline = try await device.makeComputePipelineState(function: library)
         let count = n * n
         let sharedOptions = MTLResourceOptions.storageModeShared
         let bufferA = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions)!
@@ -345,7 +346,9 @@ final class BenchmarkEngine: @unchecked Sendable {
             enc.dispatchThreadgroups(groups, threadsPerThreadgroup: threadGroupSize)
             enc.endEncoding()
             cmd.commit()
-            cmd.waitUntilCompleted()
+            // waitUntilCompleted() is unavailable from async contexts on
+            // macOS 26+; await the async completion instead.
+            await cmd.completed()
             counter.increment()
             matmuls &+= 1
         }
@@ -492,7 +495,7 @@ final class BenchmarkEngine: @unchecked Sendable {
             case .suite: break
             }
             // Pull last result for scoring.
-            if let last = await ResultsStore.shared.history.first {
+            if let last = ResultsStore.shared.history.first {
                 scores.append(score(for: test, result: last))
                 return "\(test.displayName.uppercased()): OK"
             }
@@ -561,18 +564,21 @@ final class BenchmarkEngine: @unchecked Sendable {
         }
     }
 
+    // The handler is always consumed on the main actor (it calls publishLive,
+    // which is @MainActor). Marking the closure @MainActor lets the Swift 6
+    // concurrency checker verify those calls instead of flagging them.
     private func launchPoller(start: Date, deadline: Date, label: String,
-                              handler: @escaping (Double, Double) -> Void) -> Task<Void, Never> {
+                              handler: @MainActor @escaping (Double, Double) -> Void) -> Task<Void, Never> {
         Task.detached(priority: .utility) {
             while Date() < deadline {
                 let elapsed = Date().timeIntervalSince(start)
                 let total = deadline.timeIntervalSince(start)
                 let progress = max(0, min(1, elapsed / max(0.001, total)))
-                await MainActor.run { handler(elapsed, progress) }
+                await handler(elapsed, progress)
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if Task.isCancelled { break }
             }
-            await MainActor.run { handler(Date().timeIntervalSince(start), 1.0) }
+            await handler(Date().timeIntervalSince(start), 1.0)
         }
     }
 
@@ -644,8 +650,7 @@ extension BenchmarkEngine {
     /// Rough KV-cache footprint estimate (single batch, fp16 KV).
     fileprivate func estimateKVCacheBytes(ctx: Int, paramsB: Int) -> Int {
         // Heuristic: 2 (K+V) × layers × hidden × ctx × 2 bytes.
-        // layers ≈ paramsB / 0.4e9 hidden-aligned, simplified.
-        let layers = max(8, Int(Double(paramsB) / 0.10) / 1_000_000_000 == 0 ? 32 : Double(paramsB) * 0.00000006)
+        // layers scale roughly with paramsB; 6 is a safe floor.
         let layersInt = max(6, Int(Double(paramsB) * 0.0000001 * 1_000_000_000 / 6))
         let hidden = max(1024, Int(sqrt(Double(paramsB) * 100)))
         let bytes = 2 * layersInt * hidden * ctx * 2
@@ -672,7 +677,7 @@ private func clamp(_ v: Double, _ lo: Double = 0, _ hi: Double = 100) -> Double 
     max(lo, min(hi, v))
 }
 
-private final class ThreadSafeCounter {
+private final class ThreadSafeCounter: @unchecked Sendable {
     private let lock = NSLock()
     private var raw = 0
     func increment() { lock.lock(); raw &+= 1; lock.unlock() }

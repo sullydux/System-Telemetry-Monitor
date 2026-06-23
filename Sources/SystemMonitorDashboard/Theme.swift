@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 enum Theme {
     // Core palette — matches Part 3.2 exactly.
@@ -14,23 +15,42 @@ enum Theme {
     static let panelFill     = Color(hex: 0x111722)
     static let panelBorder   = Color(hex: 0x1f2937)
     static let primaryText   = Color(hex: 0xe6edf3)
-    static let mutedText     = Color(hex: 0x7d8590)
+    static let mutedText     = Color(hex: 0x8b949e)
     static let accent        = Color(hex: 0x5eead4)
     static let accentDim     = Color(hex: 0x1f5f59)
     static let warning       = Color(hex: 0xfbbf24)
     static let danger        = Color(hex: 0xfb7185)
 
-    // Fonts. SwiftUI doesn't support per-font fallback chains, so we use
-    // SF Mono / Menlo (guaranteed present) with JetBrains Mono as an
-    // optional custom face via .custom when installed.
-    static let mono = Font.custom("JetBrains Mono", size: 12)
+    // Fonts. Prefer system monospaced for reliability; use JetBrains Mono if installed.
     static func mono(_ size: CGFloat) -> Font {
-        Font.custom("JetBrains Mono", size: size)
+        #if os(macOS)
+        if NSFontManager.shared.availableFonts.contains(where: { $0 == "JetBrains Mono" }) {
+            return Font.custom("JetBrains Mono", size: size)
+        } else {
+            return Font.system(size: size, design: .monospaced)
+        }
+        #else
+        return Font.system(size: size, design: .monospaced)
+        #endif
+    }
+    // Provide a default mono for convenience
+    static let mono = mono(14)
+
+    // Semantic sizes — single source of truth for the whole UI.
+    enum FontSize {
+        static let microLabel: CGFloat = 11   // footer / fine print
+        static let finePrint:  CGFloat = 12  // panel descriptions
+        static let body:       CGFloat = 14  // most KV / small values
+        static let value:      CGFloat = 16  // headline numbers in a card
+        static let cardTitle:  CGFloat = 14  // "CPU", "MEMORY" headers
+        static let panelTitle: CGFloat = 15  // "VITALS", "PROGRESS"
+        static let sectionH:   CGFloat = 19  // window header title
+        static let huge:       CGFloat = 22
     }
 
     // Sizing constants.
     static let cornerRadius: CGFloat = 6
-    static let panelPadding: CGFloat = 12
+    static let panelPadding: CGFloat = 14
 }
 
 extension Color {

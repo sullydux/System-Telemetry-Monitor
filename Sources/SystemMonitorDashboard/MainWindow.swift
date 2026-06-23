@@ -33,20 +33,20 @@ struct MainWindow: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("SYSTEM MONITOR DASHBOARD")
-                    .font(Theme.mono(16).bold())
+                    .font(Theme.mono(Theme.FontSize.huge).bold())
                     .tracking(2)
                     .foregroundColor(Theme.primaryText)
                 Text("on-host telemetry • no network")
-                    .font(Theme.mono(9))
+                    .font(Theme.mono(Theme.FontSize.body))
                     .foregroundColor(Theme.mutedText)
             }
             Spacer()
             HStack(spacing: 6) {
                 StatusDot(running: state.running)
                 Text(state.running ? "Running" : "Stopped")
-                    .font(Theme.mono(10).bold())
+                    .font(Theme.mono(Theme.FontSize.body).bold())
                     .foregroundColor(state.running ? Theme.accent : Theme.mutedText)
             }
         }
@@ -55,12 +55,12 @@ struct MainWindow: View {
     private var footer: some View {
         HStack {
             Text("Read-only • Local only")
-                .font(Theme.mono(8))
+                .font(Theme.mono(Theme.FontSize.microLabel))
                 .foregroundColor(Theme.mutedText)
             Spacer()
             if state.benchStatus.running {
                 Text("benchmark running: \(state.benchStatus.testType.displayName)")
-                    .font(Theme.mono(8))
+                    .font(Theme.mono(Theme.FontSize.finePrint))
                     .foregroundColor(Theme.warning)
                 Button("Stop Test") { BenchmarkEngine.shared.cancel() }
                     .buttonStyle(FlatButton(tint: Theme.danger))
@@ -137,15 +137,15 @@ private struct VitalsPanel: View {
     private var coresCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             cardHeader("CORES", value: "\(snap.logicalCores)")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 8),
-                      spacing: 4) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 6),
+                      spacing: 5) {
                 ForEach(Array(snap.perCoreUsage.enumerated()), id: \.offset) { _, v in
                     Rectangle()
                         .fill(barTint(v))
-                        .frame(height: 10)
+                        .frame(height: 18)
                         .overlay(
                             Text("\(Int((v * 100).rounded()))")
-                                .font(Theme.mono(6))
+                                .font(Theme.mono(Theme.FontSize.finePrint))
                                 .foregroundColor(Theme.background)
                         )
                         .help("\(Int((v * 100).rounded()))%")
@@ -211,12 +211,12 @@ private struct VitalsPanel: View {
     private func cardHeader(_ key: String, value: String) -> some View {
         HStack {
             Text(key)
-                .font(Theme.mono(9).bold())
+                .font(Theme.mono(Theme.FontSize.cardTitle).bold())
                 .tracking(1.5)
                 .foregroundColor(Theme.mutedText)
             Spacer()
             Text(value)
-                .font(Theme.mono(10).bold())
+                .font(Theme.mono(Theme.FontSize.value).bold())
                 .foregroundColor(Theme.primaryText)
         }
     }
@@ -235,11 +235,11 @@ private struct KV: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(k)
-                .font(Theme.mono(9))
+                .font(Theme.mono(Theme.FontSize.body))
                 .foregroundColor(Theme.mutedText)
             Spacer()
             Text(v)
-                .font(Theme.mono(9))
+                .font(Theme.mono(Theme.FontSize.body))
                 .foregroundColor(Theme.primaryText)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -250,7 +250,7 @@ private struct KV: View {
 private extension View {
     func cardStyle() -> some View {
         self
-            .padding(10)
+            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(hex: 0x0d121b))
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Theme.panelBorder, lineWidth: 1))
@@ -269,11 +269,11 @@ private struct DeviceNamePanel: View {
         Panel(title: "DEVICE NAME") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Friendly name for this Mac, stored locally only.")
-                    .font(Theme.mono(9))
+                    .font(Theme.mono(Theme.FontSize.body))
                     .foregroundColor(Theme.mutedText)
                 TextField("Device name", text: $draft)
                     .textFieldStyle(.plain)
-                    .font(Theme.mono(11))
+                    .font(Theme.mono(Theme.FontSize.value))
                     .padding(8)
                     .background(Color(hex: 0x0d121b))
                     .overlay(RoundedRectangle(cornerRadius: 4).stroke(Theme.panelBorder, lineWidth: 1))
@@ -289,7 +289,7 @@ private struct DeviceNamePanel: View {
 
                     if saved {
                         Text("local preference updated")
-                            .font(Theme.mono(8))
+                            .font(Theme.mono(Theme.FontSize.finePrint))
                             .foregroundColor(Theme.accent)
                     }
                     Spacer()

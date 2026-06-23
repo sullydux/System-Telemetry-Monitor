@@ -98,7 +98,8 @@ final class TelemetryPoller {
     private var lastNetIn: UInt64 = 0
     private var lastNetOut: UInt64 = 0
     private var lastSampleTime: Date?
-    private var prevCpuLoad: host_cpu_load_info?
+    // Previous per-core CPU tick snapshot for delta-based utilization math.
+    private var prevPerCoreTicks: [(user: Int, system: Int, idle: Int, nice: Int)]?
 
     // Static system facts cached once.
     private let sysInfo = SystemFacts.shared
@@ -208,7 +209,11 @@ final class TelemetryPoller {
 // MARK: - CPU
 
 extension TelemetryPoller {
-    /// Overall + per-core CPU utilization as a fraction 0...1.
+    /// Overall + per-core CPU utilization as a fraction 0...1, computed from
+    /// tick deltas between successive samples (the same method Activity
+    /// Monitor and Stats use). Instantaneous ratios over a single tick window
+    /// are noisy and frequently disagree with those apps, so we keep the
+    /// previous per-core tick counters and derive deltas from them.
     fileprivate func cpuUsage() -> (Double, [Double]) {
         var numCPU: natural_t = 0
         var cpuInfo: processor_info_array_t? = nil
@@ -225,7 +230,7 @@ extension TelemetryPoller {
         }
         defer {
             // vm_deallocate the buffer host_processor_info allocated.
-            var size = vm_size_t(numCPUInfo * UInt32(MemoryLayout<integer_t>.size))
+            let size = vm_size_t(numCPUInfo * UInt32(MemoryLayout<integer_t>.size))
             vm_deallocate(mach_task_self_,
                           vm_address_t(bitPattern: info),
                           size)
@@ -233,47 +238,55 @@ extension TelemetryPoller {
         }
 
         let numCPUs = max(1, Int(numCPU))
-        var perCore = [Double](repeating: 0, count: numCPUs)
         let stride = Int(CPU_STATE_MAX)
+        var perCore = [Double](repeating: 0, count: numCPUs)
 
+        // Snapshot the current ticks for every core into a plain array we can
+        // diff against the previous snapshot.
+        var curTicks: [(user: Int, system: Int, idle: Int, nice: Int)] = []
+        curTicks.reserveCapacity(numCPUs)
         for i in 0..<numCPUs {
             let off = i * stride
-            let inUser = Int(info[off + Int(CPU_STATE_USER)])
-            let inSys  = Int(info[off + Int(CPU_STATE_SYSTEM)])
-            let inIdle = Int(info[off + Int(CPU_STATE_IDLE)])
-            let inNice = Int(info[off + Int(CPU_STATE_NICE)])
-            let total = inUser + inSys + inIdle + inNice
-            perCore[i] = total > 0 ? Double(inUser + inSys + inNice) / Double(total) : 0
+            curTicks.append((
+                user:   Int(info[off + Int(CPU_STATE_USER)]),
+                system: Int(info[off + Int(CPU_STATE_SYSTEM)]),
+                idle:   Int(info[off + Int(CPU_STATE_IDLE)]),
+                nice:   Int(info[off + Int(CPU_STATE_NICE)])
+            ))
         }
 
-        let overall = overallCPUDelta()
-            ?? (perCore.isEmpty ? 0 : perCore.reduce(0, +) / Double(perCore.count))
-        return (overall, perCore)
-    }
-
-    /// Delta-based total CPU usage, more accurate than instantaneous tick ratio.
-    private func overallCPUDelta() -> Double? {
-        var info = host_cpu_load_info_data_t()
-        var size = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info_data_t>.size / MemoryLayout<integer_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: integer_t.self, capacity: Int(size)) {
-                host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &size)
+        if let prev = prevPerCoreTicks {
+            var sumBusy: Double = 0
+            var sumTotal: Double = 0
+            for i in 0..<numCPUs {
+                let c = curTicks[i]
+                let p = i < prev.count ? prev[i] : nil
+                if let p = p {
+                    let dUser = max(0, c.user   &- p.user)
+                    let dSys  = max(0, c.system &- p.system)
+                    let dIdle = max(0, c.idle   &- p.idle)
+                    let dNice = max(0, c.nice   &- p.nice)
+                    let dTotal = dUser + dSys + dIdle + dNice
+                    let busy = dUser + dSys + dNice
+                    perCore[i] = dTotal > 0 ? Double(busy) / Double(dTotal) : 0
+                    sumBusy  += Double(busy)
+                    sumTotal += Double(dTotal)
+                }
             }
-        }
-        guard result == KERN_SUCCESS else { return nil }
-        let cur = info
-
-        if let prev = prevCpuLoad {
-            let dUser = max(0, Double(Int(cur.cpu_ticks.0) &- Int(prev.cpu_ticks.0)))
-            let dSys  = max(0, Double(Int(cur.cpu_ticks.1) &- Int(prev.cpu_ticks.1)))
-            let dIdle = max(0, Double(Int(cur.cpu_ticks.2) &- Int(prev.cpu_ticks.2)))
-            let dNice = max(0, Double(Int(cur.cpu_ticks.3) &- Int(prev.cpu_ticks.3)))
-            let dTotal = dUser + dSys + dIdle + dNice
-            prevCpuLoad = cur
-            return dTotal > 0 ? (dUser + dSys + dNice) / dTotal : 0
+            prevPerCoreTicks = curTicks
+            let overall = sumTotal > 0 ? sumBusy / sumTotal : 0
+            return (overall, perCore)
         } else {
-            prevCpuLoad = cur
-            return nil
+            // First sample: no delta yet, so fall back to instantaneous ratio.
+            // This only happens once; subsequent ticks are delta-based.
+            prevPerCoreTicks = curTicks
+            for i in 0..<numCPUs {
+                let t = curTicks[i]
+                let total = t.user + t.system + t.idle + t.nice
+                perCore[i] = total > 0 ? Double(t.user + t.system + t.nice) / Double(total) : 0
+            }
+            let overall = perCore.reduce(0, +) / Double(numCPUs)
+            return (overall, perCore)
         }
     }
 
@@ -457,24 +470,41 @@ extension TelemetryPoller {
         var timeRemaining: Int = -1
         var watts: Double? = nil
 
-        if let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() {
-            if let arr = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] {
-                for ps in arr {
-                    if let desc = IOPSGetPowerSourceDescription(snapshot, ps)?.takeRetainedValue() as? [String: Any] {
-                        isPresent = true
-                        let current = desc[kIOPSCurrentCapacityKey] as? Int ?? 0
-                        let max = desc[kIOPSMaxCapacityKey] as? Int ?? 100
-                        fraction = max > 0 ? Double(current) / Double(max) : nil
-                        let powerState = desc[kIOPSPowerSourceStateKey] as? String
-                        pluggedIn = (powerState == kIOPSACPowerValue)
-                        isCharging = (desc[kIOPSIsChargingKey] as? Bool) ?? false
-                        timeRemaining = (desc[kIOPSTimeToEmptyKey] as? Int) ?? -1
-                        let amps = (desc[kIOPSCurrentKey] as? Double) ?? 0
-                        let volts = (desc[kIOPSVoltageKey] as? Double) ?? 0
-                        if amps != 0 || volts != 0 { watts = (amps * volts) / 1000.0 }
-                    }
-                }
+        // IOPS memory rules:
+        //   IOPSCopyPowerSourcesInfo  -> "Copy" -> +1 retained -> takeRetainedValue()
+        //   IOPSCopyPowerSourcesList  -> "Copy" -> +1 retained -> takeRetainedValue()
+        //   IOPSGetPowerSourceDescription -> "Get" -> UNRETAINED -> takeUnretainedValue()
+        // Calling takeRetainedValue() on the Get result over-releases the
+        // dictionary and corrupts the snapshot's heap (was the launch crash).
+        // We also iterate the source array via raw CFArray access so Swift's
+        // CF bridging never touches the opaque power-source IDs.
+        guard let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let sources = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() else {
+            return BatteryInfo(isPresent: false, isCharging: false,
+                               pluggedIn: false, chargeFraction: nil,
+                               timeRemaining: -1, cycles: nil, watts: nil)
+        }
+
+        let count = CFArrayGetCount(sources)
+        for i in 0..<count {
+            guard let raw = CFArrayGetValueAtIndex(sources, i) else { continue }
+            let ps = unsafeBitCast(raw, to: CFTypeRef.self)
+            // Get rule: unretained — do NOT release.
+            guard let descRef = IOPSGetPowerSourceDescription(snapshot, ps) else { continue }
+            guard let desc = descRef.takeUnretainedValue() as? [String: Any], !desc.isEmpty else {
+                continue
             }
+            isPresent = true
+            let current = desc[kIOPSCurrentCapacityKey] as? Int ?? 0
+            let max = desc[kIOPSMaxCapacityKey] as? Int ?? 100
+            fraction = max > 0 ? Double(current) / Double(max) : nil
+            let powerState = desc[kIOPSPowerSourceStateKey] as? String
+            pluggedIn = (powerState == kIOPSACPowerValue)
+            isCharging = (desc[kIOPSIsChargingKey] as? Bool) ?? false
+            timeRemaining = (desc[kIOPSTimeToEmptyKey] as? Int) ?? -1
+            let amps = (desc[kIOPSCurrentKey] as? Double) ?? 0
+            let volts = (desc[kIOPSVoltageKey] as? Double) ?? 0
+            if amps != 0 || volts != 0 { watts = (amps * volts) / 1000.0 }
         }
 
         let cycles: Int? = isPresent ? readCycleCount() : nil
@@ -496,16 +526,51 @@ extension TelemetryPoller {
     }
 }
 
-// MARK: - GPU (Apple Silicon via Metal)
+// MARK: - GPU (Apple Silicon via Metal + IORegistry)
 
 extension TelemetryPoller {
     fileprivate func readGPU() -> GPUInfo {
         let name = SystemFacts.shared.gpuName
         let cores = SystemFacts.shared.gpuCores
         let metal = SystemFacts.shared.metalDeviceName
-        // Real-time GPU utilization on Apple Silicon requires private APIs.
-        // Surface nil honestly — the UI then displays N/A instead of a fake number.
-        return GPUInfo(name: name, coreCount: cores, load: nil, metalDeviceName: metal)
+        // Live GPU utilization on Apple Silicon lives in the AGXAccelerator
+        // node's PerformanceStatistics dict — the same source the Stats app
+        // and asitop read. Returns nil honestly if unavailable so the UI
+        // shows N/A rather than a fabricated number.
+        let load = readGPULoad()
+        return GPUInfo(name: name, coreCount: cores, load: load, metalDeviceName: metal)
+    }
+
+    /// Read "Device Utilization %" (0...100) from the GPU accelerator. Falls
+    /// back to Renderer utilization if Device is missing.
+    private func readGPULoad() -> Double? {
+        guard let matching = IOServiceMatching("AGXAccelerator") else { return nil }
+        var it: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &it) == KERN_SUCCESS else {
+            return nil
+        }
+        var best: Double? = nil
+        var entry = IOIteratorNext(it)
+        while entry != 0 {
+            if let stats = IORegistryEntryCreateCFProperty(entry,
+                                                           "PerformanceStatistics" as CFString,
+                                                           kCFAllocatorDefault, 0)?
+                .takeRetainedValue() as? [String: Any] {
+                if let v = utilization(stats, key: "Device Utilization %")
+                    ?? utilization(stats, key: "Renderer Utilization %") {
+                    best = v
+                }
+            }
+            IOObjectRelease(entry)
+            entry = IOIteratorNext(it)
+        }
+        IOObjectRelease(it)
+        return best
+    }
+
+    private func utilization(_ stats: [String: Any], key: String) -> Double? {
+        guard let v = stats[key] as? NSNumber else { return nil }
+        return v.doubleValue / 100.0
     }
 }
 
@@ -610,22 +675,30 @@ final class SystemFacts {
         }
         #endif
 
-        // GPU core count via IORegistry GPU accelerator node.
+        // Try multiple IORegistry nodes and key variants for core counts.
         var cores = 0
-        if let matching = IOServiceMatching("IOGPUDevice") {
-            var it: io_iterator_t = 0
-            if IOServiceGetMatchingServices(kIOMainPortDefault, matching, &it) == KERN_SUCCESS {
-                var entry = IOIteratorNext(it)
-                while entry != 0 {
-                    var props: Unmanaged<CFMutableDictionary>?
-                    if IORegistryEntryCreateCFProperties(entry, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-                       let d = props?.takeRetainedValue() as? NSDictionary {
-                        if let c = d["gpu-core-count"] as? Int { cores = c }
+        let candidates = ["IOGPUDevice", "AGXAccelerator", "IOAccelerator"]
+        for node in candidates {
+            if cores > 0 { break }
+            if let matching = IOServiceMatching(node) {
+                var it: io_iterator_t = 0
+                if IOServiceGetMatchingServices(kIOMainPortDefault, matching, &it) == KERN_SUCCESS {
+                    var entry = IOIteratorNext(it)
+                    while entry != 0 {
+                        var props: Unmanaged<CFMutableDictionary>?
+                        if IORegistryEntryCreateCFProperties(entry, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
+                           let d = props?.takeRetainedValue() as? NSDictionary {
+                            if let c = d["gpu-core-count"] as? Int { cores = c }
+                            else if let c = d["gpu-core-count"] as? NSNumber { cores = c.intValue }
+                            else if let cstr = d["gpu-core-count"] as? String, let c = Int(cstr) { cores = c }
+                            else if let c = d["gpuCount"] as? Int { cores = c }
+                            else if let c = d["core-count"] as? Int { cores = c }
+                        }
+                        IOObjectRelease(entry)
+                        entry = IOIteratorNext(it)
                     }
-                    IOObjectRelease(entry)
-                    entry = IOIteratorNext(it)
+                    IOObjectRelease(it)
                 }
-                IOObjectRelease(it)
             }
         }
         if cores == 0 { cores = inferAppleGPUCoreCount(from: metalName) }
