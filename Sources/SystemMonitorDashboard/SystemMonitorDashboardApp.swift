@@ -27,9 +27,15 @@ struct SystemMonitorDashboardApp: App {
                     BenchmarkEngine.shared.bind(state)
                     state.startPolling()
                     if statusBar == nil { statusBar = StatusBarController() }
+                    // Start local HTTP server for remote viewers
+                    DispatchQueue.global(qos: .background).async {
+                        ServerAddressManager.shared.updateAddress()
+                        LocalHTTPServer.shared.start()
+                    }
                 }
                 .onDisappear {
                     state.stopPolling()
+                    LocalHTTPServer.shared.stop()
                 }
         }
         .defaultSize(width: 900, height: 720)

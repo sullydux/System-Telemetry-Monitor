@@ -28,6 +28,12 @@
     "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.swiftdeps",
     "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/Format.dia"
   },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/LocalHTTPServer.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/LocalHTTPServer.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/LocalHTTPServer~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/LocalHTTPServer.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/LocalHTTPServer.dia"
+  },
   "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift": {
     "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow.swift.o",
     "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/MainWindow~partial.swiftmodule",
@@ -57,6 +63,12 @@
     "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/RemoteShareWindow~partial.swiftmodule",
     "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/RemoteShareWindow.swiftdeps",
     "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/RemoteShareWindow.dia"
+  },
+  "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/ServerAddress.swift": {
+    "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/ServerAddress.swift.o",
+    "swiftmodule": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/ServerAddress~partial.swiftmodule",
+    "swift-dependencies": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/ServerAddress.swiftdeps",
+    "diagnostics": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/ServerAddress.dia"
   },
   "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift": {
     "object": "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/release/SystemMonitorDashboard.build/StatusBarController.swift.o",

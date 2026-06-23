@@ -4,7 +4,7 @@ import AppKit
 // Provides a best-effort local server address and helper to copy it to the pasteboard.
 final class ServerAddressManager: ObservableObject {
     static let shared = ServerAddressManager()
-    @Published var address: String = "https://127.0.0.1:8765"
+    @Published var address: String = "http://127.0.0.1:8765"
     let port: Int = 8765
 
     private init() {
@@ -13,9 +13,9 @@ final class ServerAddressManager: ObservableObject {
 
     func updateAddress() {
         if let ip = Self.getLocalIPAddress() {
-            address = "https://\(ip):\(port)"
+            address = "http://\(ip):\(port)"
         } else {
-            address = "https://127.0.0.1:\(port)"
+            address = "http://127.0.0.1:\(port)"
         }
     }
 

@@ -179,7 +179,7 @@ final class BenchmarkEngine: @unchecked Sendable {
 
         let elapsed = Date().timeIntervalSince(start)
         let throughput = Double(totalMatmuls) / max(0.001, elapsed)
-        let avgCPU = TelemetryPoller.shared.sample().cpuUsage * 100
+        _ = TelemetryPoller.shared.sample().cpuUsage * 100
 
         let summary = "CPU BENCHMARK — COMPLETE\ncombined matmuls: \(totalMatmuls)\nduration: \(String(format: "%.2f", elapsed)) s\nthroughput: \(Format.big(throughput)) matmuls/s"
         let metrics: [String: Double] = ["matmuls": Double(totalMatmuls), "throughput_matmuls_per_s": throughput]
@@ -364,7 +364,7 @@ final class BenchmarkEngine: @unchecked Sendable {
 
         let weightsBytesRequested = estimateModelSizeBytes(paramsB: paramsB, quant: params.llmQuantization)
         let kvBytesRequested = estimateKVCacheBytes(ctx: params.llmContextLength, paramsB: paramsB)
-        let totalRequested = Double(weightsBytesRequested + kvBytesRequested)
+        _ = Double(weightsBytesRequested + kvBytesRequested)
 
         // Cap real allocation to a safe fraction of RAM to avoid OOM.
         let safeFraction = 0.7
