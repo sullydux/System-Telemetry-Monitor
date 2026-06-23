@@ -124,7 +124,6 @@ rm -rf "$HOME/Library/Application Support/Sullybase-Telemetry"
 ## Updates
 
 - View on external device over the wifi you are on. no greater internet sharing.
-- Menubar integration
 
 ---
 
