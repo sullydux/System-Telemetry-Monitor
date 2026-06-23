@@ -131,63 +131,59 @@ final class BenchmarkEngine: @unchecked Sendable {
     // MARK: CPU test
 
     private func runCpu(duration: Double, params: BenchmarkStatus) async throws {
-        await setPhase("CPU • spinning up \(params.cpuWorkers) workers")
+        await setPhase("CPU • ramping workload")
         let workers = max(1, params.cpuWorkers)
-        let n = nextPow2(max(64, params.cpuMatrixSize))
-        let group = DispatchGroup()
-        let counter = ThreadSafeCounter()
-
+        let sizes = [128, 256, 512, 1024, 2048, 4096, 8192]
         let start = Date()
         let deadline = start.addingTimeInterval(duration)
-        let pollTask = launchPoller(start: start, deadline: deadline, label: "CPU") { elapsed, progress in
-            let m = counter.value
-            let throughput = m == 0 ? 0 : Double(m) / max(0.001, elapsed)
-            self.publishLive("""
-            CPU BENCHMARK
-            workers        : \(workers)
-            matrix size    : \(n)×\(n)
-            elapsed        : \(String(format: "%.1f", elapsed)) s
-            total matmuls  : \(m)
-            throughput     : \(Format.big(throughput)) matmuls/s
-            avg cpu        : \(self.currentCpuLabel())
-            """, progress: progress)
-        }
+        var totalMatmuls = 0
 
-        // Spawn workers on background queues; each only mutates the counter.
-        for _ in 0..<workers {
-            DispatchQueue.global(qos: .userInitiated).async(group: group) {
-                BenchmarkEngine.cpuWorkerStatic(n: n, deadline: deadline, counter: counter)
+        for size in sizes {
+            if Date() >= deadline { break }
+            let n = nextPow2(max(64, size))
+            await setPhase("CPU • matmul \(n)×\(n)")
+            let group = DispatchGroup()
+            let counter = ThreadSafeCounter()
+            let stepDeadline = Date().addingTimeInterval(min( max(1.0, duration / Double(sizes.count)), deadline.timeIntervalSinceNow ))
+
+            for _ in 0..<workers {
+                DispatchQueue.global(qos: .userInitiated).async(group: group) {
+                    BenchmarkEngine.cpuWorkerStatic(n: n, deadline: stepDeadline, counter: counter)
+                }
             }
+
+            // Poll progress until this step's deadline
+            while Date() < stepDeadline {
+                try checkCancelled()
+                let elapsed = Date().timeIntervalSince(start)
+                let progress = max(0, min(1, elapsed / max(0.001, deadline.timeIntervalSince(start))))
+                let m = counter.value
+                let throughput = m == 0 ? 0 : Double(m) / max(0.001, elapsed)
+                await publishLive("CPU BENCHMARK\nsize: \(n)×\(n)\nmatmuls: \(m)\nthroughput: \(Format.big(throughput)) matmuls/s", progress: progress)
+
+                // Safeguards: stop if CPU temp too high or ram nearly full
+                let snap = TelemetryPoller.shared.sample()
+                if let temp = snap.cpuTemperature, temp > 95.0 { appState?.log("CPU temp \(temp)C exceeded safe threshold — stopping", .warn); throw CancellationError() }
+                if snap.ramUsage > 0.98 { appState?.log("RAM usage >98% — stopping", .warn); throw CancellationError() }
+
+                try await Task.sleep(nanoseconds: 300_000_000)
+            }
+
+            // Wait for workers to finish naturally after stepDeadline
+            _ = await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+                group.notify(queue: .global()) { cont.resume() }
+            }
+
+            totalMatmuls += counter.value
         }
-        // Wait on a background thread so we don't block the actor pool.
-        _ = await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-            group.notify(queue: .global()) { cont.resume() }
-        }
-        pollTask.cancel()
 
         let elapsed = Date().timeIntervalSince(start)
-        let totalMatmuls = counter.value
         let throughput = Double(totalMatmuls) / max(0.001, elapsed)
         let avgCPU = TelemetryPoller.shared.sample().cpuUsage * 100
 
-        let summary = """
-        CPU BENCHMARK — COMPLETE
-        workers            : \(workers)
-        matrix size        : \(n)×\(n)
-        duration           : \(String(format: "%.2f", elapsed)) s
-        total matmuls      : \(totalMatmuls)
-        synthetic throughput: \(Format.big(throughput)) matmuls/s
-        average CPU usage  : \(String(format: "%.1f", avgCPU)) %
-        """
-        let metrics: [String: Double] = [
-            "matmuls": Double(totalMatmuls),
-            "throughput_matmuls_per_s": throughput,
-            "avg_cpu_pct": avgCPU,
-            "workers": Double(workers),
-            "matrix_size": Double(n)
-        ]
-        await commit(test: .cpu, summary: summary, metrics: metrics,
-                     duration: elapsed, phase: "CPU")
+        let summary = "CPU BENCHMARK — COMPLETE\ncombined matmuls: \(totalMatmuls)\nduration: \(String(format: "%.2f", elapsed)) s\nthroughput: \(Format.big(throughput)) matmuls/s"
+        let metrics: [String: Double] = ["matmuls": Double(totalMatmuls), "throughput_matmuls_per_s": throughput]
+        await commit(test: .cpu, summary: summary, metrics: metrics, duration: elapsed, phase: "CPU")
     }
 
     /// Static so the worker closure captures no instance state.
@@ -215,67 +211,54 @@ final class BenchmarkEngine: @unchecked Sendable {
     // MARK: RAM test
 
     private func runRam(duration: Double, params: BenchmarkStatus) async throws {
-        await setPhase("RAM • allocating buffer")
-        let totalRAM = Double(SystemFacts.shared.physicalRAMBytes)
-        let targetGB = totalRAM * Double(max(10, min(95, params.ramPercent))) / 100.0 / 1_073_741_824.0
-        let bytes = Int(targetGB * 1_073_741_824.0)
-        let elements = max(1024, bytes / MemoryLayout<UInt64>.size)
-
-        // Allocate off the main thread.
-        let buffer = UnsafeMutableBufferPointer<UInt64>.allocate(capacity: elements)
-        defer { buffer.deallocate() }
-        for i in 0..<elements { buffer[i] = UInt64(i & 0xdeadbeef) }
-
-        await setPhase("RAM • saturating bandwidth")
+        await setPhase("RAM • incremental allocation")
+        let totalRAMBytes = Double(SystemFacts.shared.physicalRAMBytes)
+        let maxTargetPercent = max(10, min(95, params.ramPercent))
+        let startPercent = max(10, maxTargetPercent / 4)
         let start = Date()
         let deadline = start.addingTimeInterval(duration)
-        var passes = 0
-        let pollTask = launchPoller(start: start, deadline: deadline, label: "RAM") { elapsed, progress in
-            let moved = Double(passes) * Double(elements) * 8.0
-            let bw = elapsed > 0 ? moved / elapsed : 0
-            self.publishLive("""
-            RAM BENCHMARK
-            target          : \(String(format: "%.2f", targetGB)) GB (\(params.ramPercent)% of \(String(format: "%.0f", totalRAM/1_073_741_824.0)) GB)
-            elements        : \(Format.big(Double(elements)))
-            passes          : \(passes)
-            bytes moved     : \(Format.big(moved)) B
-            bandwidth       : \(Format.rate(bw))
-            avg cpu         : \(self.currentCpuLabel())
-            """, progress: progress)
-        }
+        var passesTotal = 0
 
-        let pattern: UInt64 = 0x9E3779B97F4A7C15
-        while Date() < deadline {
-            try doCancelCheck()
-            // Read-modify-write sweep over the whole buffer.
-            for i in 0..<elements {
-                buffer[i] &+= pattern &* buffer[i] ^ (UInt64(i) &+ 1)
+        var currentPercent = startPercent
+        while Date() < deadline && currentPercent <= maxTargetPercent {
+            try checkCancelled()
+            let targetGB = totalRAMBytes * Double(currentPercent) / 100.0 / 1_073_741_824.0
+            let bytes = Int(targetGB * 1_073_741_824.0)
+            let elements = max(1024, bytes / MemoryLayout<UInt64>.size)
+
+            await setPhase("RAM • allocating \(String(format: "%.0f", Double(currentPercent)))% (~\(String(format: "%.2f", targetGB)) GB)")
+
+            // Allocate and touch memory
+            let buffer = UnsafeMutableBufferPointer<UInt64>.allocate(capacity: elements)
+            for i in 0..<elements { buffer[i] = UInt64(i & 0xdeadbeef) }
+
+            // Run a short bandwidth-saturating loop for this level
+            let stepDeadline = min(deadline, Date().addingTimeInterval(max(1.0, duration / 8.0)))
+            var passes = 0
+            let pattern: UInt64 = 0x9E3779B97F4A7C15
+            while Date() < stepDeadline {
+                try checkCancelled()
+                for i in 0..<elements {
+                    buffer[i] &+= pattern &* buffer[i] ^ (UInt64(i) &+ 1)
+                }
+                passes += 1
+                // Safeguard: abort if system memory usage dangerously high
+                let snap = TelemetryPoller.shared.sample()
+                if snap.ramUsage > 0.95 { appState?.log("RAM usage >95% — stopping test", .warn); break }
             }
-            passes += 1
+
+            passesTotal += passes
+            buffer.deallocate()
+            currentPercent = min(maxTargetPercent, currentPercent + max(5, maxTargetPercent/4))
         }
-        pollTask.cancel()
 
         let elapsed = Date().timeIntervalSince(start)
-        let bytesMoved = Double(passes) * Double(elements) * 8.0
+        let bytesMoved = Double(passesTotal) * 8.0 * Double(max(1024, Int((Double(SystemFacts.shared.physicalRAMBytes)/1_073_741_824.0) * 1024)))
         let bandwidth = elapsed > 0 ? bytesMoved / elapsed : 0
 
-        let summary = """
-        RAM BENCHMARK — COMPLETE
-        target allocation  : \(String(format: "%.2f", targetGB)) GB
-        array elements     : \(Format.big(Double(elements)))
-        full passes        : \(passes)
-        bytes moved        : \(Format.big(bytesMoved)) B
-        bandwidth          : \(Format.rate(bandwidth))
-        duration           : \(String(format: "%.2f", elapsed)) s
-        """
-        let metrics: [String: Double] = [
-            "target_gb": targetGB,
-            "bytes_moved": bytesMoved,
-            "bandwidth_bytes_per_s": bandwidth,
-            "passes": Double(passes)
-        ]
-        await commit(test: .ram, summary: summary, metrics: metrics,
-                     duration: elapsed, phase: "RAM")
+        let summary = "RAM BENCHMARK — COMPLETE\npasses: \(passesTotal)\nduration: \(String(format: "%.2f", elapsed)) s\nest. bandwidth: \(Format.rate(bandwidth))"
+        let metrics: [String: Double] = ["passes": Double(passesTotal), "bandwidth_bytes_per_s": bandwidth]
+        await commit(test: .ram, summary: summary, metrics: metrics, duration: elapsed, phase: "RAM")
     }
 
     // MARK: GPU test
@@ -300,147 +283,116 @@ final class BenchmarkEngine: @unchecked Sendable {
             return
         }
 
-        let n = nextPow2(max(128, params.gpuMatrixSize))
-        let library = try makeMatmulLibrary(device: device)
-        // makeComputePipelineState(function:) is async on macOS 26+ SDKs.
-        let pipeline = try await device.makeComputePipelineState(function: library)
-        let count = n * n
-        let sharedOptions = MTLResourceOptions.storageModeShared
-        let bufferA = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions)!
-        let bufferB = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions)!
-        let bufferC = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions)!
-        fillRandom(buffer: bufferA, count: count)
-        fillRandom(buffer: bufferB, count: count)
-
-        await setPhase("GPU • dispatching matmuls")
+        let sizes = [256, 512, 1024, 2048, 4096]
         let start = Date()
         let deadline = start.addingTimeInterval(duration)
-        var matmuls = 0
-        let counter = ThreadSafeCounter()
+        var totalMatmuls = 0
 
-        let pollTask = launchPoller(start: start, deadline: deadline, label: "GPU") { elapsed, progress in
-            let m = counter.value
-            let throughput = elapsed > 0 ? Double(m) / elapsed : 0
-            self.publishLive("""
-            GPU BENCHMARK
-            backend         : \(backend.label)
-            device          : \(device.name)
-            matrix size     : \(n)×\(n)
-            matmuls         : \(m)
-            throughput      : \(Format.big(throughput)) matmuls/s
-            """, progress: progress)
-        }
+        for s in sizes {
+            if Date() >= deadline { break }
+            let n = nextPow2(max(128, s))
+            await setPhase("GPU • matmul \(n)×\(n)")
 
-        let threadGroupSize = MTLSizeMake(16, 16, 1)
-        let groups = MTLSizeMake((n + 15) / 16, (n + 15) / 16, 1)
-        while Date() < deadline {
-            try doCancelCheck()
-            guard let cmd = queue.makeCommandBuffer(),
-                  let enc = cmd.makeComputeCommandEncoder() else { break }
-            enc.setComputePipelineState(pipeline)
-            enc.setBuffer(bufferA, offset: 0, index: 0)
-            enc.setBuffer(bufferB, offset: 0, index: 1)
-            enc.setBuffer(bufferC, offset: 0, index: 2)
-            var n32: UInt32 = UInt32(n)
-            enc.setBytes(&n32, length: MemoryLayout<UInt32>.size, index: 3)
-            enc.dispatchThreadgroups(groups, threadsPerThreadgroup: threadGroupSize)
-            enc.endEncoding()
-            cmd.commit()
-            // waitUntilCompleted() is unavailable from async contexts on
-            // macOS 26+; await the async completion instead.
-            await cmd.completed()
-            counter.increment()
-            matmuls &+= 1
+            let library = try makeMatmulLibrary(device: device)
+            let pipeline = try await device.makeComputePipelineState(function: library)
+            let count = n * n
+            let sharedOptions = MTLResourceOptions.storageModeShared
+            guard let bufferA = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions),
+                  let bufferB = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions),
+                  let bufferC = device.makeBuffer(length: count * MemoryLayout<Float>.size, options: sharedOptions) else {
+                appState?.log("Failed to allocate GPU buffers for \(n)×\(n)", .error)
+                break
+            }
+            fillRandom(buffer: bufferA, count: count)
+            fillRandom(buffer: bufferB, count: count)
+
+            let stepDeadline = min(deadline, Date().addingTimeInterval(max(1.0, duration / Double(sizes.count))))
+            var matmuls = 0
+            let threadGroupSize = MTLSizeMake(16, 16, 1)
+            let groups = MTLSizeMake((n + 15) / 16, (n + 15) / 16, 1)
+
+            while Date() < stepDeadline {
+                try doCancelCheck()
+                guard let cmd = queue.makeCommandBuffer(),
+                      let enc = cmd.makeComputeCommandEncoder() else { break }
+                enc.setComputePipelineState(pipeline)
+                enc.setBuffer(bufferA, offset: 0, index: 0)
+                enc.setBuffer(bufferB, offset: 0, index: 1)
+                enc.setBuffer(bufferC, offset: 0, index: 2)
+                var n32: UInt32 = UInt32(n)
+                enc.setBytes(&n32, length: MemoryLayout<UInt32>.size, index: 3)
+                enc.dispatchThreadgroups(groups, threadsPerThreadgroup: threadGroupSize)
+                enc.endEncoding()
+                cmd.commit()
+                // Await async completion (works with Swift concurrency)
+                await cmd.completed()
+                matmuls += 1
+
+                // Safeguards
+                let snap = TelemetryPoller.shared.sample()
+                if snap.ramUsage > 0.98 { appState?.log("RAM usage >98% during GPU test — aborting", .warn); throw CancellationError() }
+
+                if let temp = snap.cpuTemperature, temp > 100.0 { appState?.log("High CPU temp detected during GPU test — aborting", .warn); throw CancellationError() }
+            }
+
+            totalMatmuls += matmuls
         }
-        pollTask.cancel()
 
         let elapsed = Date().timeIntervalSince(start)
-        let throughput = elapsed > 0 ? Double(matmuls) / elapsed : 0
+        let throughput = Double(totalMatmuls) / max(0.001, elapsed)
 
-        let summary = """
-        GPU BENCHMARK — COMPLETE
-        backend             : \(backend.label)
-        device              : \(device.name)
-        matrix size         : \(n)×\(n)
-        total matmuls       : \(matmuls)
-        synthetic throughput: \(Format.big(throughput)) matmuls/s
-        duration            : \(String(format: "%.2f", elapsed)) s
-        """
-        let metrics: [String: Double] = [
-            "matmuls": Double(matmuls),
-            "throughput_matmuls_per_s": throughput,
-            "matrix_size": Double(n)
-        ]
-        await commit(test: .gpu, summary: summary, metrics: metrics,
-                     duration: elapsed, phase: "GPU")
+        let summary = "GPU BENCHMARK — COMPLETE\ncombined matmuls: \(totalMatmuls)\nduration: \(String(format: "%.2f", elapsed)) s\nthroughput: \(Format.big(throughput)) matmuls/s"
+        let metrics: [String: Double] = ["matmuls": Double(totalMatmuls), "throughput_matmuls_per_s": throughput]
+        await commit(test: .gpu, summary: summary, metrics: metrics, duration: elapsed, phase: "GPU")
         #else
         let msg = "GPU BENCHMARK — UNAVAILABLE\nMetal framework unavailable in this build."
-        await commit(test: .gpu, summary: msg, metrics: [:],
-                     duration: 0, phase: "GPU", error: msg)
+        await commit(test: .gpu, summary: msg, metrics: [:], duration: 0, phase: "GPU", error: msg)
         #endif
     }
 
     // MARK: Synthetic LLM test
 
     private func runLLM(duration: Double, params: BenchmarkStatus) async throws {
-        await setPhase("LLM • modeling local inference load")
+        await setPhase("LLM • synthetic estimate (safeguarded)")
 
-        let paramsB = params.llmPreset == "custom" ? params.llmCustomParamsB : Int(params.llmPreset.replacingOccurrences(of: "B", with: "")) ?? 7
+        var paramsB = params.llmPreset == "custom" ? params.llmCustomParamsB : Int(params.llmPreset.replacingOccurrences(of: "B", with: "")) ?? 7
+        // Cap paramsB based on available RAM (conservative: 50% of RAM for weights)
+        let totalRAMBytes = Double(SystemFacts.shared.physicalRAMBytes)
+        let maxParamsBByRam = max(1, Int((totalRAMBytes * 0.5) / 1_000_000_000.0))
+        var capped = false
+        if paramsB > maxParamsBByRam {
+            paramsB = maxParamsBByRam
+            capped = true
+        }
+
         let weightsBytes = estimateModelSizeBytes(paramsB: paramsB, quant: params.llmQuantization)
         let kvBytes = estimateKVCacheBytes(ctx: params.llmContextLength, paramsB: paramsB)
         let totalWorkingSet = weightsBytes + kvBytes
 
         // Derived estimates from local hardware.
-        let totalRAM = Double(SystemFacts.shared.physicalRAMBytes)
+        let totalRAM = totalRAMBytes
         let gpuCores = SystemFacts.shared.gpuCores
         let fitsInMemory = Double(totalWorkingSet) <= totalRAM * 0.9
         let memBandwidthBytesPerSec = Double(estimatePeakMemBandwidth(gpuCores: gpuCores))
-        let tokensPerSecBandwidth = memBandwidthBytesPerSec / Double(weightsBytes)
-        let tokensPerSec = fitsInMemory ? min(tokensPerSecBandwidth, 250) : 0.5
+        let tokensPerSecBandwidth = weightsBytes > 0 ? memBandwidthBytesPerSec / Double(weightsBytes) : 0
+        let tokensPerSec = fitsInMemory ? min(tokensPerSecBandwidth, 250) : max(0.1, tokensPerSecBandwidth * 0.1)
         let bottleneck = tokensPerSecBandwidth >= tokensPerSec ? "memory bandwidth" : "compute"
 
         let start = Date()
         let deadline = start.addingTimeInterval(duration)
         let pollTask = launchPoller(start: start, deadline: deadline, label: "LLM") { elapsed, progress in
-            self.publishLive("""
-            LLM STATS — SYNTHETIC
-            model size      : \(paramsB)B  (preset \(params.llmPreset))
-            quantization    : \(params.llmQuantization)
-            context length  : \(params.llmContextLength)
-            batch size      : \(params.llmBatchSize)
-            device          : \(params.llmDevice)
-            weights size    : \(Format.bytes(Double(weightsBytes)))
-            KV cache est.   : \(Format.bytes(Double(kvBytes)))
-            total working   : \(Format.bytes(Double(totalWorkingSet)))
-            fits in RAM     : \(fitsInMemory ? "yes" : "NO")
-            est. tokens/sec : \(String(format: "%.1f", tokensPerSec))
-            bottleneck      : \(bottleneck)
-            """, progress: progress)
+            self.publishLive("LLM STATS — SYNTHETIC\nmodel size: \(paramsB)B\(capped ? " (capped by RAM)" : "")\nweights: \(Format.bytes(Double(weightsBytes)))\nKV: \(Format.bytes(Double(kvBytes)))\nfits in RAM: \(fitsInMemory ? "YES" : "NO")\nest tokens/sec: \(String(format: "%.1f", tokensPerSec))", progress: progress)
         }
 
-        // Burn a little CPU simulating decode work so the bar actually moves.
+        // Simulate lightweight activity for UI; no real model inference performed.
         while Date() < deadline {
             try doCancelCheck()
-            try await Task.sleep(nanoseconds: 100_000_000)
+            try await Task.sleep(nanoseconds: 150_000_000)
         }
         pollTask.cancel()
 
         let elapsed = Date().timeIntervalSince(start)
-        let summary = """
-        LLM STATS — SYNTHETIC ESTIMATE
-        model size        : \(paramsB)B params
-        quantization      : \(params.llmQuantization)
-        device            : \(params.llmDevice)
-        weights size      : \(Format.bytes(Double(weightsBytes)))
-        KV cache estimate : \(Format.bytes(Double(kvBytes)))  (ctx=\(params.llmContextLength))
-        total working set : \(Format.bytes(Double(totalWorkingSet)))
-        system RAM        : \(Format.bytes(Double(totalRAM)))
-        fits in memory    : \(fitsInMemory ? "YES" : "NO")
-        est. memory bw    : \(Format.rate(Double(memBandwidthBytesPerSec)))
-        est. tokens/sec   : \(String(format: "%.1f", tokensPerSec))
-        bottleneck        : \(bottleneck)
-        NOTE              : synthetic; no model was downloaded.
-        """
+        let summary = "LLM STATS — SYNTHETIC ESTIMATE\nmodel size: \(paramsB)B params\nweights size: \(Format.bytes(Double(weightsBytes)))\nKV cache estimate: \(Format.bytes(Double(kvBytes)))\ntotal working set: \(Format.bytes(Double(totalWorkingSet)))\nsystem RAM: \(Format.bytes(Double(totalRAM)))\nfits in memory: \(fitsInMemory ? "YES" : "NO")\nest tokens/sec: \(String(format: "%.1f", tokensPerSec))\n\(capped ? "NOTE: requested model size was capped to fit RAM" : "")"
         let metrics: [String: Double] = [
             "params_b": Double(paramsB),
             "weights_bytes": Double(weightsBytes),
@@ -448,8 +400,7 @@ final class BenchmarkEngine: @unchecked Sendable {
             "tokens_per_sec": tokensPerSec,
             "context_length": Double(params.llmContextLength)
         ]
-        await commit(test: .llm, summary: summary, metrics: metrics,
-                     duration: elapsed, phase: "LLM")
+        await commit(test: .llm, summary: summary, metrics: metrics, duration: elapsed, phase: "LLM")
     }
 
     // MARK: Suite

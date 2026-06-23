@@ -18,7 +18,6 @@ struct MainWindow: View {
                 VitalsPanel()
                 HStack(alignment: .top, spacing: 12) {
                     DeviceNamePanel()
-                    LivePreviewPanel()
                 }
                 BenchmarkPanel()
                 LogPanel()
@@ -307,42 +306,6 @@ private struct DeviceNamePanel: View {
     }
 }
 
-// MARK: - Live preview
-
-private struct LivePreviewPanel: View {
-    @EnvironmentObject var state: AppState
-
-    var body: some View {
-        Panel(title: "LIVE LOCAL PREVIEW") {
-            VStack(alignment: .leading, spacing: 10) {
-                previewRow("CPU", value: state.livePreview.cpu)
-                previewRow("RAM", value: state.livePreview.ram)
-                previewRow("GPU", value: state.livePreview.gpu ?? 0,
-                           enabled: state.livePreview.gpu != nil)
-                HStack {
-                    Text("Refreshed every second from local app state.")
-                        .font(Theme.mono(8))
-                        .foregroundColor(Theme.mutedText)
-                    Spacer()
-                }
-            }
-        }
-    }
-
-    private func previewRow(_ label: String, value: Double, enabled: Bool = true) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .font(Theme.mono(9).bold())
-                .frame(width: 32, alignment: .leading)
-                .foregroundColor(Theme.mutedText)
-            TelemetryBar(value: value, enabled: enabled)
-            Text(enabled ? Format.pct(value) : "N/A")
-                .font(Theme.mono(9))
-                .foregroundColor(enabled ? Theme.primaryText : Theme.mutedText)
-                .frame(width: 54, alignment: .trailing)
-        }
-    }
-}
 
 // MARK: - Benchmark panel
 

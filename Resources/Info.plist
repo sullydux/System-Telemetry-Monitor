@@ -10,6 +10,10 @@
     <key>CFBundleExecutable</key>
     <string>SystemMonitorDashboard</string>
 
+    <!-- App icon (App.icns placed into Resources/) -->
+    <key>CFBundleIconFile</key>
+    <string>App</string>
+
     <!-- Reverse-DNS identifier. Matches the "sullybase" namespace used by the
          app's internal persistence paths under Application Support. -->
     <key>CFBundleIdentifier</key>

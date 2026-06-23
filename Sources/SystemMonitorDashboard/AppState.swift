@@ -27,21 +27,11 @@ struct LogEntry: Identifiable, Equatable {
     }
 }
 
-// MARK: - Live preview snapshot for the UI
-
-struct LivePreview: Equatable {
-    var cpu: Double = 0
-    var ram: Double = 0
-    var gpu: Double? = nil
-    var updated: Date = Date()
-}
-
 // MARK: - Root state
 
 final class AppState: ObservableObject {
     // Telemetry
     @Published var snapshot: TelemetrySnapshot?
-    @Published var livePreview = LivePreview()
 
     // Local config
     @Published var deviceName: String
@@ -86,12 +76,6 @@ final class AppState: ObservableObject {
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.snapshot = snap
-                self.livePreview = LivePreview(
-                    cpu: snap.cpuUsage,
-                    ram: snap.ramUsage,
-                    gpu: snap.gpu.load,
-                    updated: Date()
-                )
             }
         }
     }
