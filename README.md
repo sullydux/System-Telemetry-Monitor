@@ -1,6 +1,6 @@
 <div align="center">
 
-![Sullybase System Telemetry Monitor](ico.png)
+<img src="ico.png" alt="Sullybase System Telemetry Monitor Icon" style="float: left; margin-right: 15px; width: 240px; height: 240px;">
 
 # Sullybase System Telemetry Monitor
 
