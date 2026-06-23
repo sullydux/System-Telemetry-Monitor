@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 extension Notification.Name {
     static let openBenchmarkSuite = Notification.Name("sullybase.openBenchmarkSuite")
@@ -15,6 +16,7 @@ extension Notification.Name {
 @main
 struct SystemMonitorDashboardApp: App {
     @StateObject private var state = AppState()
+    @State private var statusBar: StatusBarController? = nil
 
     var body: some Scene {
         // Main telemetry window.
@@ -24,6 +26,7 @@ struct SystemMonitorDashboardApp: App {
                 .onAppear {
                     BenchmarkEngine.shared.bind(state)
                     state.startPolling()
+                    if statusBar == nil { statusBar = StatusBarController() }
                 }
                 .onDisappear {
                     state.stopPolling()
