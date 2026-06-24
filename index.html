@@ -672,16 +672,19 @@
     // Network
     const net = data.network || {};
     document.getElementById('net-value').textContent = `↑${net.up_kbps ?? 0} / ↓${net.down_kbps ?? 0} KB/s`;
-    document.getElementById('net-sub').textContent = `Total: ↑ ${net.sent_mb ?? 0} MB · ↓ ${net.recv_mb ?? 0} MB`;
-    document.getElementById('net-rate-sub').textContent = 'Since this server last started';
+    // These are live throughput rates, not cumulative totals.
+    document.getElementById('net-sub').textContent =
+      `↑ ${net.up_mbps ?? 0} MB/s · ↓ ${net.down_mbps ?? 0} MB/s`;
+    document.getElementById('net-rate-sub').textContent = 'Current throughput';
 
-    // Battery
+    // Battery — percent is null on desktops (no battery); hide the card then
+    // rather than calling null.toFixed() and aborting the whole render.
     const battCard = document.getElementById('battery-card');
-    if (data.battery){
+    if (data.battery && data.battery.percent != null){
       battCard.style.display = 'block';
       document.getElementById('batt-value').textContent = data.battery.percent.toFixed(0) + '%';
       const mins = data.battery.minutes_remaining;
-      const timeStr = mins ? ` · ${Math.floor(mins/60)}h ${mins%60}m left` : '';
+      const timeStr = mins > 0 ? ` · ${Math.floor(mins/60)}h ${mins%60}m left` : '';
       document.getElementById('batt-sub').textContent = (data.battery.plugged_in ? 'Plugged in' : 'On battery') + timeStr;
       setBar('batt-bar', data.battery.percent);
     } else {

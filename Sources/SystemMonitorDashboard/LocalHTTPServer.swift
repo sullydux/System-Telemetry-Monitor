@@ -205,6 +205,11 @@ final class LocalHTTPServer {
         ram["used_gb"] = Double(round(snap.ramUsedGB * 10) / 10)
         ram["total_gb"] = Double(round(snap.ramTotalGB * 10) / 10)
         ram["available_gb"] = max(0.0, Double(round((snap.ramTotalGB - snap.ramUsedGB) * 10) / 10))
+        ram["wired_gb"] = Double(round(snap.ramWiredGB * 10) / 10)
+        ram["compressed_gb"] = Double(round(snap.ramCompressedGB * 10) / 10)
+        // Swap totals come from vm.swapusage (same sysctl the reference uses).
+        ram["swap_used_gb"] = Double(round(snap.swapUsedGB * 10) / 10)
+        ram["swap_total_gb"] = Double(round(snap.swapTotalGB * 10) / 10)
 
         var disk: [String: Any] = [:]
         let diskPercent = snap.diskTotalGB > 0 ? Int((snap.diskUsedGB / snap.diskTotalGB * 100).rounded()) : 0
@@ -212,17 +217,25 @@ final class LocalHTTPServer {
         disk["used_gb"] = Double(round(snap.diskUsedGB * 10) / 10)
         disk["total_gb"] = Double(round(snap.diskTotalGB * 10) / 10)
         disk["free_gb"] = max(0.0, Double(round((snap.diskTotalGB - snap.diskUsedGB) * 10) / 10))
+        // Bytes/sec → MiB/s (1,048,576). The HTML reads disk.io.read_mbps/write_mbps.
+        var io: [String: Any] = [:]
+        io["read_mbps"] = Double(round(snap.diskReadBytesPerSec / 1_048_576.0 * 10) / 10)
+        io["write_mbps"] = Double(round(snap.diskWriteBytesPerSec / 1_048_576.0 * 10) / 10)
+        disk["io"] = io
 
         var gpuArr: [[String: Any]] = []
         var g: [String: Any] = ["name": snap.gpu.name, "core_count": snap.gpu.coreCount]
         if let load = snap.gpu.load { g["load_percent"] = Int((load * 100).rounded()) }
         gpuArr.append(g)
 
+        // Network throughput is sampled as a rate (bytes/sec) from getifaddrs
+        // deltas — there are no cumulative totals in the snapshot, so we don't
+        // fabricate them. The HTML headline uses up_kbps/down_kbps.
         var net: [String: Any] = [:]
         net["up_kbps"] = Int((snap.netOutBytesPerSec / 1024).rounded())
         net["down_kbps"] = Int((snap.netInBytesPerSec / 1024).rounded())
-        net["sent_mb"] = Double(round((snap.netOutBytesPerSec * 1.0 / 1_048_576.0) * 10) / 10)
-        net["recv_mb"] = Double(round((snap.netInBytesPerSec * 1.0 / 1_048_576.0) * 10) / 10)
+        net["up_mbps"] = Double(round(snap.netOutBytesPerSec / 1_048_576.0 * 10) / 10)
+        net["down_mbps"] = Double(round(snap.netInBytesPerSec / 1_048_576.0 * 10) / 10)
 
         var battery: [String: Any] = [:]
         battery["percent"] = snap.battery.chargeFraction.map { Int(($0 * 100).rounded()) } ?? NSNull()

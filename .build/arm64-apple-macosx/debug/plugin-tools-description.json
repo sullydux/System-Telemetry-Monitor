@@ -40,6 +40,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/LocalHTTPServer.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift"
         },
         {
@@ -49,6 +53,18 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShare.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShareWindow.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/ServerAddress.swift"
         },
         {
           "kind" : "file",
@@ -68,6 +84,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
         },
         {
@@ -83,13 +103,18 @@
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/BenchmarkEngine.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/BenchmarkWindow.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Format.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/LocalHTTPServer.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MainWindow.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MenubarPopover.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShare.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShareWindow.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/ServerAddress.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/StatusBarController.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/SystemMonitorDashboardApp.swift.o",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Telemetry.swift.o",
-        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Theme.swift.o"
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Theme.swift.o",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/WindowRegistry.swift.o"
       ],
       "otherArguments" : [
         "-target",
@@ -112,7 +137,6 @@
         "-entry-point-function-name",
         "-Xfrontend",
         "SystemMonitorDashboard_main",
-        "-color-diagnostics",
         "-swift-version",
         "5",
         "-I",
@@ -155,6 +179,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/LocalHTTPServer.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MainWindow.swift.o"
         },
         {
@@ -164,6 +192,18 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShare.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShareWindow.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/ServerAddress.swift.o"
         },
         {
           "kind" : "file",
@@ -183,6 +223,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/WindowRegistry.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/Modules/SystemMonitorDashboard.swiftmodule"
         }
       ],
@@ -192,13 +236,18 @@
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkWindow.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Format.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/LocalHTTPServer.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShare.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShareWindow.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/ServerAddress.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift",
         "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift",
-        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift"
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift",
+        "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
       ],
       "tempsPath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build",
       "wholeModuleOptimization" : false
@@ -219,13 +268,18 @@
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkEngine.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/BenchmarkWindow.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Format.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/LocalHTTPServer.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MenubarPopover.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShare.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShareWindow.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/ServerAddress.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/StatusBarController.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/SystemMonitorDashboardApp.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Telemetry.swift",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift",
+      "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift",
       "-I",
       "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/Modules",
       "-target",
@@ -248,7 +302,6 @@
       "-entry-point-function-name",
       "-Xfrontend",
       "SystemMonitorDashboard_main",
-      "-color-diagnostics",
       "-swift-version",
       "5",
       "-I",
@@ -330,6 +383,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/LocalHTTPServer.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/MainWindow.swift"
         },
         {
@@ -339,6 +396,18 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Persistence.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShare.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/RemoteShareWindow.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/ServerAddress.swift"
         },
         {
           "kind" : "file",
@@ -355,6 +424,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/Theme.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/Sources/SystemMonitorDashboard/WindowRegistry.swift"
         }
       ],
       "outputFilePath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/sources"
@@ -384,6 +457,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/LocalHTTPServer.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/MainWindow.swift.o"
         },
         {
@@ -393,6 +470,18 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Persistence.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShare.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/RemoteShareWindow.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/ServerAddress.swift.o"
         },
         {
           "kind" : "file",
@@ -409,6 +498,10 @@
         {
           "kind" : "file",
           "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/Theme.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.build/WindowRegistry.swift.o"
         }
       ],
       "outputFilePath" : "/Users/sullydux/Desktop/Coding/Github/System Telemetry Monitor/.build/arm64-apple-macosx/debug/SystemMonitorDashboard.product/Objects.LinkFileList"

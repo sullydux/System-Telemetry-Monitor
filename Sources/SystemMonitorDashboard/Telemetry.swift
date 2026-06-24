@@ -36,6 +36,7 @@ struct TelemetrySnapshot: Equatable {
     var ramWiredGB: Double
     var ramCompressedGB: Double
     var swapUsedGB: Double
+    var swapTotalGB: Double
 
     // GPU
     var gpu: GPUInfo
@@ -100,6 +101,13 @@ final class TelemetryPoller {
     private var lastSampleTime: Date?
     // Previous per-core CPU tick snapshot for delta-based utilization math.
     private var prevPerCoreTicks: [(user: Int, system: Int, idle: Int, nice: Int)]?
+
+    // Lazily-opened SMC client for CPU temperature. Created once on first
+    // use; if AppleSMC can't be opened (SIP, sandbox) we flip smcUnavailable
+    // so we never retry every tick. All access happens on the poller's
+    // serial queue, same as prevPerCoreTicks, so no extra locking is needed.
+    private var smcClient: SMCClient?
+    private var smcUnavailable = false
 
     // Static system facts cached once.
     private let sysInfo = SystemFacts.shared
@@ -187,6 +195,7 @@ final class TelemetryPoller {
             ramWiredGB: vm.wiredGB,
             ramCompressedGB: vm.compressedGB,
             swapUsedGB: vm.swapUsedGB,
+            swapTotalGB: vm.swapTotalGB,
             gpu: gpu,
             diskUsedGB: diskCap.usedGB,
             diskTotalGB: diskCap.totalGB,
@@ -293,6 +302,136 @@ extension TelemetryPoller {
     /// Best-effort CPU temperature via SMC. Returns nil gracefully when
     /// blocked by SIP, so the UI shows N/A rather than a fabricated value.
     private func readCPUTemperature() -> Double? {
+        // Open the SMC client lazily; remember the failure so we don't retry
+        // every tick on machines/configs where AppleSMC is unavailable.
+        if smcUnavailable { return nil }
+        if smcClient == nil {
+            if let client = SMCClient() {
+                smcClient = client
+            } else {
+                smcUnavailable = true
+                return nil
+            }
+        }
+        guard let smc = smcClient else { return nil }
+
+        // Try each known CPU temperature key across M1–M5 generations; the
+        // first one that returns a value wins (same scheme as SystemStats.swift).
+        for key in SMCClient.cpuTemperatureKeys {
+            if let t = smc.temperature(key: key) {
+                return t
+            }
+        }
+        return nil
+    }
+}
+
+// MARK: - SMC (AppleSMC) temperature reader
+
+/// SMC key-data struct matching the AppleSMC.kext IOConnectCallStructMethod ABI.
+/// Ported from SystemStats.swift (same layout Stats/iStat/TG Pro use).
+fileprivate struct SMCKeyData_t {
+    var key: UInt32 = 0
+    struct Vers_t { var major: UInt8 = 0; var minor: UInt8 = 0; var build: UInt8 = 0
+                    var reserved: UInt8 = 0; var release: UInt16 = 0 }
+    struct PLimitData_t { var version: UInt16 = 0; var length: UInt16 = 0; var cpuPLimit: UInt32 = 0
+                          var gpuPLimit: UInt32 = 0; var memPLimit: UInt32 = 0 }
+    struct KeyInfo_t { var dataSize: UInt32 = 0; var dataType: UInt32 = 0; var dataAttributes: UInt8 = 0 }
+    var vers = Vers_t()
+    var pLimitData = PLimitData_t()
+    var keyInfo = KeyInfo_t()
+    var padding: UInt16 = 0
+    var result: UInt8 = 0
+    var status: UInt8 = 0
+    var data8: UInt8 = 0
+    var data32: UInt32 = 0
+    var bytes: (UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,
+                UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,
+                UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,
+                UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8,UInt8) =
+               (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+}
+
+/// Encode a 4-character SMC key into its big-endian UInt32 form.
+fileprivate func fourCC(_ s: String) -> UInt32 {
+    let b = Array(s.utf8)
+    guard b.count == 4 else { return 0 }
+    return UInt32(b[0]) << 24 | UInt32(b[1]) << 16 | UInt32(b[2]) << 8 | UInt32(b[3])
+}
+
+/// Opens the AppleSMC user client and reads temperature keys. Returns nil on
+/// init if the service can't be opened (SIP/sandbox); callers should cache
+/// that failure rather than retrying every tick.
+fileprivate final class SMCClient {
+    private var conn: io_connect_t = 0
+    private var open = false
+
+    /// CPU temperature SMC keys to probe, in priority order. Covers M1–M5
+    /// (P-core, then E-core, then the overall die hotspot as a last resort).
+    /// Sourced from SystemStats.swift, which pulls from exelban/Stats values.swift.
+    static let cpuTemperatureKeys: [String] = [
+        // CPU P-Core: M1 Tp01/Tp05…, M2 Tp01/Tp05/Tp09…, M3 Te01/Te09…, M4/M5 Tf01/Tf09…
+        "Tp01","Tp05","Tp0D","Tp0H","Tp0L","Tp0P","Tp0X","Tp0b",
+        "Tp09","Tp0X","Tp0b","Tp0f","Tp0j",
+        "Te01","Te09","Te0D","Te0P",
+        "Tf01","Tf09","Tf0D","Tf0H","Tf0L","Tf0P",
+        // CPU E-Core: M1 Tp09/Tp0T, M2 Tp1h/Tp1t…, M3 Te05/Te0L, M4/M5 Tf04/Tf14
+        "Tp09","Tp0T",
+        "Tp1h","Tp1t","Tp1p","Tp1l",
+        "Te05","Te0L","Te0P","Te0S",
+        "Tf04","Tf0D","Tf14","Tf1D",
+        // Die hotspot — most reliable single reading on Apple Silicon as a fallback
+        "TCMz","TPMP","TRDX","T5SP"
+    ]
+
+    init?() {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault,
+                      IOServiceMatching("AppleSMC"))
+        guard service != 0 else { return nil }
+        defer { IOObjectRelease(service) }
+        guard IOServiceOpen(service, mach_task_self_, 0, &conn) == KERN_SUCCESS else { return nil }
+        open = true
+    }
+
+    deinit { if open { IOServiceClose(conn) } }
+
+    /// Read a 4-char SMC key and decode it to Celsius. Supports the two
+    /// temperature encodings AppleSMC uses: "sp78" (signed 7.8 fixed-point)
+    /// and "flt " (IEEE-754 float). Returns nil on any failure.
+    func temperature(key: String) -> Double? {
+        var input  = SMCKeyData_t()
+        var output = SMCKeyData_t()
+        input.key = fourCC(key)
+        input.data8 = 5  // kSMCGetKeyInfo
+        let inSize  = MemoryLayout<SMCKeyData_t>.size
+        var outSize = MemoryLayout<SMCKeyData_t>.size
+
+        // First call: get key info (type + size).
+        var result = IOConnectCallStructMethod(conn, 2,
+            &input, inSize, &output, &outSize)
+        guard result == KERN_SUCCESS else { return nil }
+
+        input.keyInfo = output.keyInfo
+        input.data8 = 4  // kSMCReadKey
+        result = IOConnectCallStructMethod(conn, 2,
+            &input, inSize, &output, &outSize)
+        guard result == KERN_SUCCESS else { return nil }
+
+        let type = input.keyInfo.dataType
+        let sp78 = fourCC("sp78")
+        let flt  = fourCC("flt ")
+
+        if type == sp78 {
+            let raw = Int16(output.bytes.0) << 8 | Int16(output.bytes.1)
+            return Double(raw) / 256.0
+        } else if type == flt {
+            var raw: Float = 0
+            withUnsafeMutableBytes(of: &raw) {
+                $0[0] = output.bytes.3; $0[1] = output.bytes.2
+                $0[2] = output.bytes.1; $0[3] = output.bytes.0
+            }
+            return Double(raw)
+        }
         return nil
     }
 }
@@ -306,6 +445,7 @@ extension TelemetryPoller {
         var wiredGB: Double
         var compressedGB: Double
         var swapUsedGB: Double
+        var swapTotalGB: Double
         var fractionUsed: Double
     }
 
@@ -328,25 +468,29 @@ extension TelemetryPoller {
         var compressedGB: Double = 0
 
         if result == KERN_SUCCESS {
-            let active      = Int(stats.active_count)
-            let wired       = Int(stats.wire_count)
-            let compressed  = Int(stats.compressor_page_count)
-            let speculative = Int(stats.speculative_count)
-            // Activity-Monitor-style "used" = active + wired + compressed + speculative.
-            usedGB = gb(active + wired + compressed + speculative)
+            let active     = Int(stats.active_count)
+            let wired      = Int(stats.wire_count)
+            let compressed = Int(stats.compressor_page_count)
+            // Matches exelban/Stats + Activity Monitor "Memory Used":
+            // active (app) + wired + compressed. Inactive/speculative are
+            // reclaimable cache and aren't counted as "used" — including them
+            // inflated this app's figure to ~91% vs Stats' mid-70s%.
+            usedGB = gb(active + wired + compressed)
             wiredGB = gb(wired)
             compressedGB = gb(compressed)
         }
 
         let totalGB = Double(SystemFacts.shared.physicalRAMBytes) / 1_073_741_824.0
-        let swapUsedGB = Double(readSwap() ?? 0) / 1_073_741_824.0
+        let swap = readSwap()
+        let swapUsedGB = Double(swap?.used ?? 0) / 1_073_741_824.0
+        let swapTotalGB = Double(swap?.total ?? 0) / 1_073_741_824.0
         let frac = totalGB > 0 ? min(1, usedGB / totalGB) : 0
         return MemStats(totalGB: totalGB, usedGB: usedGB, wiredGB: wiredGB,
                         compressedGB: compressedGB, swapUsedGB: swapUsedGB,
-                        fractionUsed: frac)
+                        swapTotalGB: swapTotalGB, fractionUsed: frac)
     }
 
-    private func readSwap() -> UInt64? {
+    private func readSwap() -> (used: UInt64, total: UInt64)? {
         var counts = xsw_usage()
         var size = MemoryLayout<xsw_usage>.size
         let r = withUnsafeMutablePointer(to: &counts) {
@@ -354,7 +498,7 @@ extension TelemetryPoller {
                 sysctlbyname("vm.swapusage", $0, &size, nil, 0)
             }
         }
-        return r == 0 ? counts.xsu_used : nil
+        return r == 0 ? (counts.xsu_used, counts.xsu_total) : nil
     }
 }
 
@@ -364,43 +508,33 @@ extension TelemetryPoller {
     struct DiskIO { var readBytes: UInt64; var writeBytes: UInt64 }
 
     /// Sum read/write byte counters across all block storage drivers.
+    /// Matches SystemStats.swift: iterate IOBlockStorageDriver instances directly
+    /// (one per physical driver) and read Bytes (Read)/(Written) off each one.
+    /// Going via IOMedia + parent-walk can double-count on disks that expose
+    /// both whole-disk and partition media backed by the same driver.
     fileprivate func diskCounters() -> DiskIO? {
-        guard let matching = IOServiceMatching("IOMedia") else { return nil }
+        guard let matching = IOServiceMatching("IOBlockStorageDriver") else { return nil }
         var it: io_iterator_t = 0
         if IOServiceGetMatchingServices(kIOMainPortDefault, matching, &it) != KERN_SUCCESS {
             return nil
         }
+        defer { IOObjectRelease(it) }
 
         var readTotal: UInt64 = 0
         var writeTotal: UInt64 = 0
         var entry: io_registry_entry_t = IOIteratorNext(it)
         while entry != 0 {
-            // Walk up to the parent that owns Statistics.
-            var parent: io_registry_entry_t = 0
-            if IORegistryEntryGetParentEntry(entry, kIOServicePlane, &parent) == KERN_SUCCESS {
-                if let (rb, wb) = readStorageStats(parent) {
-                    readTotal += rb; writeTotal += wb
-                }
-                IOObjectRelease(parent)
-            }
-            IOObjectRelease(entry)
-            entry = IOIteratorNext(it)
+            defer { IOObjectRelease(entry); entry = IOIteratorNext(it) }
+            var props: Unmanaged<CFMutableDictionary>?
+            guard IORegistryEntryCreateCFProperties(entry, &props,
+                                                    kCFAllocatorDefault, 0) == KERN_SUCCESS,
+                  let dict = props?.takeRetainedValue() as? [String: Any],
+                  let stats = dict["Statistics"] as? [String: Any]
+            else { continue }
+            if let r = (stats["Bytes (Read)"]    as? NSNumber)?.uint64Value { readTotal  += r }
+            if let w = (stats["Bytes (Written)"] as? NSNumber)?.uint64Value { writeTotal += w }
         }
-        IOObjectRelease(it)
         return DiskIO(readBytes: readTotal, writeBytes: writeTotal)
-    }
-
-    private func readStorageStats(_ service: io_registry_entry_t) -> (UInt64, UInt64)? {
-        var props: Unmanaged<CFMutableDictionary>?
-        guard IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
-              let cfProps = props?.takeRetainedValue() else { return nil }
-        let dict = cfProps as NSDictionary
-        if let stats = dict["Statistics"] as? NSDictionary {
-            let read  = (stats["Bytes (Read)"]    as? NSNumber)?.uint64Value ?? 0
-            let write = (stats["Bytes (Written)"] as? NSNumber)?.uint64Value ?? 0
-            return (read, write)
-        }
-        return nil
     }
 
     fileprivate func diskCapacity() -> (usedGB: Double, totalGB: Double) {
@@ -445,8 +579,11 @@ extension TelemetryPoller {
                     seen.insert(name)
                     if let dataPtr = info.ifa_data {
                         let netData = dataPtr.assumingMemoryBound(to: if_data.self).pointee
-                        // Skip loopback so we only count real traffic.
-                        if name != "lo0" {
+                        // Skip loopback + tunnels/VPN (utun, gif, stf) so we
+                        // only count physical traffic. Matches SystemStats.swift.
+                        let skip = name.hasPrefix("lo") || name.hasPrefix("utun") ||
+                                   name.hasPrefix("gif") || name.hasPrefix("stf")
+                        if !skip {
                             inBytes  &+= UInt64(netData.ifi_ibytes)
                             outBytes &+= UInt64(netData.ifi_obytes)
                         }
